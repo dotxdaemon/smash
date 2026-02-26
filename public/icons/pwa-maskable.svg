@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Smash Matchup Lab maskable icon">
+  <rect width="512" height="512" fill="#1e6a4d" />
+  <rect x="76" y="76" width="360" height="360" rx="72" fill="#fffef9" stroke="#d4e6dd" stroke-width="18" />
+  <path d="M140 182h232" stroke="#1e6a4d" stroke-width="16" stroke-linecap="round" />
+  <path d="M140 246h158" stroke="#4f5f55" stroke-width="14" stroke-linecap="round" />
+  <path d="M140 302h180" stroke="#4f5f55" stroke-width="14" stroke-linecap="round" />
+  <circle cx="352" cy="294" r="56" fill="#1e6a4d" />
+  <path d="M352 258v72M316 294h72" stroke="#fffef9" stroke-width="12" stroke-linecap="round" />
+</svg>
