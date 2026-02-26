@@ -1,0 +1,80 @@
+/* ABOUTME: Defines global visual tokens and base element resets for the matchup lab UI. */
+/* ABOUTME: Establishes typography, gradients, and accessibility-focused defaults. */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap');
+
+:root {
+  --bg-cream: #f4efe4;
+  --bg-mint: #d4e6dd;
+  --surface: #fffef9;
+  --surface-muted: #f0f4eb;
+  --ink: #1f2e27;
+  --ink-muted: #4f5f55;
+  --accent: #1e6a4d;
+  --accent-soft: #b7d7c9;
+  --danger: #8a2c2c;
+  --line: #c7d7cd;
+  --shadow: 0 16px 36px rgba(37, 68, 54, 0.12);
+  font-family: 'Space Grotesk', 'Avenir Next', 'Segoe UI', sans-serif;
+  line-height: 1.45;
+  font-weight: 400;
+  color: var(--ink);
+  background: linear-gradient(140deg, var(--bg-cream) 0%, var(--bg-mint) 100%);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  color: var(--ink);
+  background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.64), transparent 40%),
+    radial-gradient(circle at 80% 0%, rgba(161, 204, 184, 0.52), transparent 35%),
+    linear-gradient(140deg, var(--bg-cream) 0%, var(--bg-mint) 100%);
+}
+
+#root {
+  min-height: 100vh;
+  padding: 1.25rem;
+}
+
+a {
+  color: var(--accent);
+}
+
+a:hover {
+  color: #245f4a;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid rgba(30, 106, 77, 0.45);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
