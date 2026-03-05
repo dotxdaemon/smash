@@ -1,24 +1,30 @@
-/* ABOUTME: Defines global visual tokens and base element resets for the matchup lab UI. */
-/* ABOUTME: Establishes typography, gradients, and accessibility-focused defaults. */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap');
+/* ABOUTME: Defines the tournament notebook design system and global element defaults. */
+/* ABOUTME: Establishes typography, paper textures, and accessibility-focused interactions. */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap');
 
 :root {
-  --bg-cream: #f4efe4;
-  --bg-mint: #d4e6dd;
-  --surface: #fffef9;
-  --surface-muted: #f0f4eb;
-  --ink: #1f2e27;
-  --ink-muted: #4f5f55;
-  --accent: #1e6a4d;
-  --accent-soft: #b7d7c9;
-  --danger: #8a2c2c;
-  --line: #c7d7cd;
-  --shadow: 0 16px 36px rgba(37, 68, 54, 0.12);
-  font-family: 'Space Grotesk', 'Avenir Next', 'Segoe UI', sans-serif;
-  line-height: 1.45;
+  --paper: #efe4d2;
+  --paper-soft: #f8f1e6;
+  --paper-strong: #fffaf1;
+  --paper-shadow: #ddcdb6;
+  --ink: #241b14;
+  --ink-soft: #5e5043;
+  --ink-faint: #8b7d6d;
+  --accent: #8d452c;
+  --accent-soft: #ddb19f;
+  --support: #29463b;
+  --support-soft: #d6dfd5;
+  --line: #b7a48f;
+  --line-strong: #8d7762;
+  --danger: #8b2f2d;
+  --shadow: 0 22px 50px rgba(48, 33, 20, 0.14);
+  --shadow-tight: 0 10px 24px rgba(48, 33, 20, 0.1);
+  --mobile-nav-height: 82px;
+  font-family: 'Instrument Sans', 'Segoe UI', sans-serif;
+  line-height: 1.5;
   font-weight: 400;
   color: var(--ink);
-  background: linear-gradient(140deg, var(--bg-cream) 0%, var(--bg-mint) 100%);
+  background: var(--paper);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -28,19 +34,61 @@
   box-sizing: border-box;
 }
 
+html {
+  min-width: 320px;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
   color: var(--ink);
-  background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.64), transparent 40%),
-    radial-gradient(circle at 80% 0%, rgba(161, 204, 184, 0.52), transparent 35%),
-    linear-gradient(140deg, var(--bg-cream) 0%, var(--bg-mint) 100%);
+  background:
+    radial-gradient(circle at 14% 10%, rgba(141, 69, 44, 0.14), transparent 26%),
+    radial-gradient(circle at 88% 12%, rgba(41, 70, 59, 0.1), transparent 24%),
+    linear-gradient(180deg, rgba(255, 250, 241, 0.4), rgba(239, 228, 210, 0.15)),
+    var(--paper);
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0,
+      transparent calc(100% - 4.8rem),
+      rgba(141, 69, 44, 0.12) calc(100% - 4.8rem),
+      rgba(141, 69, 44, 0.12) calc(100% - 4.62rem),
+      transparent calc(100% - 4.62rem)
+    ),
+    repeating-linear-gradient(
+      180deg,
+      rgba(94, 80, 67, 0.06) 0,
+      rgba(94, 80, 67, 0.06) 1px,
+      transparent 1px,
+      transparent 46px
+    );
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 1.25rem;
+  border: 1px solid rgba(141, 69, 44, 0.08);
+  border-radius: 26px;
+  pointer-events: none;
 }
 
 #root {
   min-height: 100vh;
-  padding: 1.25rem;
+  padding: 1.1rem;
+  position: relative;
+  z-index: 1;
 }
 
 a {
@@ -48,7 +96,7 @@ a {
 }
 
 a:hover {
-  color: #245f4a;
+  color: #6f311d;
 }
 
 button,
@@ -57,6 +105,11 @@ select,
 textarea {
   font: inherit;
   color: inherit;
+  font-size: 1rem;
+}
+
+button {
+  background: transparent;
 }
 
 button:focus-visible,
@@ -64,8 +117,20 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 [tabindex]:focus-visible {
-  outline: 3px solid rgba(30, 106, 77, 0.45);
+  outline: 3px solid rgba(141, 69, 44, 0.35);
   outline-offset: 2px;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Fraunces', Georgia, serif;
+  letter-spacing: -0.02em;
+}
+
+strong {
+  font-weight: 600;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -76,5 +141,16 @@ textarea:focus-visible,
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@media (max-width: 860px) {
+  #root {
+    padding: 0.8rem;
+  }
+
+  body::after {
+    inset: 0.7rem;
+    border-radius: 18px;
   }
 }

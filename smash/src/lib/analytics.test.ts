@@ -1,6 +1,6 @@
 // ABOUTME: Verifies matchup aggregation, drill selection, and focus rule generation.
 // ABOUTME: Uses deterministic fixtures to lock behavior for recurring pattern summaries.
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MatchEntry } from '../types'
 import {
   computeWorstMatchups,
@@ -57,6 +57,15 @@ const entries: MatchEntry[] = [
     confidence: 2,
   },
 ]
+
+beforeEach(() => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date('2026-02-20T12:00:00.000Z'))
+})
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 describe('summarizeMatchup', () => {
   it('returns top recurrence values and deterministic drill for one opponent', () => {
