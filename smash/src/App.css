@@ -899,6 +899,15 @@
     padding-bottom: calc(var(--mobile-nav-height) + 2.3rem);
   }
 
+  .cover-sheet {
+    display: none;
+  }
+
+  .panel::before,
+  .notebook-card::before {
+    display: none;
+  }
+
   .view-nav--desktop {
     display: none;
   }
@@ -908,14 +917,66 @@
   }
 
   .notebook-panel {
-    padding: 0.85rem;
+    padding: 1rem;
+  }
+
+  .notebook-card,
+  .insight-card {
+    padding: 1rem;
+  }
+
+  .command-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      'key name'
+      'field field';
+    gap: 0.35rem 0.6rem;
+    padding: 0.55rem 0;
+  }
+
+  .command-key {
+    grid-area: key;
+    padding-top: 0;
+  }
+
+  .command-name {
+    grid-area: name;
+    padding-top: 0;
+  }
+
+  .command-row input,
+  .command-row select,
+  .command-row textarea,
+  .command-row .tag-picker {
+    grid-area: field;
+  }
+
+  .command-row--stacked .tag-picker,
+  .command-row--notes textarea {
+    margin-top: 0;
   }
 
   .save-bar {
-    bottom: calc(var(--mobile-nav-height) + 0.85rem);
+    bottom: calc(var(--mobile-nav-height) + 0.9rem);
+    padding-top: 0.5rem;
   }
 
-   .hotkeys {
+  .section-kicker,
+  .eyebrow,
+  .cover-sheet__issue,
+  .command-name,
+  .panel-heading__note,
+  .matchup-sheet__copy-label,
+  .matchup-sheet__note-label {
+    letter-spacing: 0.06em;
+  }
+
+  .panel-heading__note {
+    font-size: 0.68rem;
+    line-height: 1.45;
+  }
+
+  .hotkeys {
     display: none;
   }
 
@@ -937,27 +998,13 @@
     gap: 0.8rem;
   }
 
-  .cover-sheet {
-    padding: 1rem 1rem 0.95rem;
-  }
-
-  .cover-sheet__meta {
-    grid-template-columns: 1fr;
-  }
-
-  .cover-sheet__actions,
   .lead-sheet__actions {
     grid-auto-flow: row;
   }
 
   .notebook-card,
   .insight-card {
-    padding: 0.85rem;
-  }
-
-  .command-row {
-    grid-template-columns: 1.95rem 6.8rem minmax(0, 1fr);
-    gap: 0.5rem;
+    padding: 1rem;
   }
 
   .ledger-row,
