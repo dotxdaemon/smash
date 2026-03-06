@@ -14,6 +14,53 @@ function getFillColors(svg: string): string[] {
   )
 }
 
+function getPathBounds(svg: string): {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+} {
+  const transformMatch = svg.match(
+    /<g transform="translate\(([-\d.]+) ([-\d.]+)\) scale\(([-\d.]+)\)">/i,
+  )
+
+  if (!transformMatch) {
+    throw new Error('Missing icon transform')
+  }
+
+  const [, translateXText, translateYText, scaleText] = transformMatch
+  const translateX = Number.parseFloat(translateXText)
+  const translateY = Number.parseFloat(translateYText)
+  const scale = Number.parseFloat(scaleText)
+  const coordinates = Array.from(
+    svg.matchAll(/ d="([^"]+)"/g),
+    (match) => match[1],
+  ).flatMap((path) =>
+    Array.from(path.matchAll(/-?\d+(?:\.\d+)?/g), (match) =>
+      Number.parseFloat(match[0]),
+    ),
+  )
+
+  if (coordinates.length === 0) {
+    throw new Error('Missing icon path coordinates')
+  }
+
+  const xs: number[] = []
+  const ys: number[] = []
+
+  for (let index = 0; index < coordinates.length; index += 2) {
+    xs.push(coordinates[index] * scale + translateX)
+    ys.push(coordinates[index + 1] * scale + translateY)
+  }
+
+  return {
+    minX: Math.min(...xs),
+    minY: Math.min(...ys),
+    maxX: Math.max(...xs),
+    maxY: Math.max(...ys),
+  }
+}
+
 function isNeutralHaloColor(color: string): boolean {
   const channels = [
     Number.parseInt(color.slice(1, 3), 16),
@@ -39,13 +86,9 @@ describe('icon assets', () => {
     expect(manifest).toContain('"src": "/icons/pwa-maskable.svg"')
     expect(icon).toContain('aria-label="Palutena stock logo icon"')
     expect(maskableIcon).toContain('aria-label="Palutena stock logo maskable icon"')
-    expect(icon).toContain('shape-rendering="crispEdges"')
-    expect(maskableIcon).toContain('shape-rendering="crispEdges"')
     expect(icon).not.toContain('<rect width="512" height="512" fill=')
     expect(icon).not.toContain('href="data:image/png;base64,')
     expect(maskableIcon).not.toContain('href="data:image/png;base64,')
-    expect(icon).not.toContain('stroke=')
-    expect(maskableIcon).not.toContain('stroke=')
     expect(icon).not.toContain('fill-opacity=')
     expect(maskableIcon).not.toContain('fill-opacity=')
   })
@@ -56,5 +99,35 @@ describe('icon assets', () => {
 
     expect(getFillColors(icon).filter(isNeutralHaloColor)).toEqual([])
     expect(getFillColors(maskableIcon).filter(isNeutralHaloColor)).toEqual([])
+  })
+
+  it('does not ship the icon as a pixel-sprite trace', () => {
+    const icon = readProjectFile('../../public/icons/pwa-icon.svg')
+    const maskableIcon = readProjectFile('../../public/icons/pwa-maskable.svg')
+    const iconPathCount = (icon.match(/<path\b/g) ?? []).length
+    const maskablePathCount = (maskableIcon.match(/<path\b/g) ?? []).length
+
+    expect(iconPathCount).toBeGreaterThanOrEqual(5)
+    expect(iconPathCount).toBeLessThanOrEqual(8)
+    expect(maskablePathCount).toBeGreaterThanOrEqual(5)
+    expect(maskablePathCount).toBeLessThanOrEqual(8)
+    expect(icon).not.toContain('shape-rendering="crispEdges"')
+    expect(maskableIcon).not.toContain('shape-rendering="crispEdges"')
+  })
+
+  it('keeps the drawn icon inset from the canvas edges', () => {
+    const icon = readProjectFile('../../public/icons/pwa-icon.svg')
+    const maskableIcon = readProjectFile('../../public/icons/pwa-maskable.svg')
+    const iconBounds = getPathBounds(icon)
+    const maskableBounds = getPathBounds(maskableIcon)
+
+    expect(iconBounds.minX).toBeGreaterThanOrEqual(40)
+    expect(iconBounds.minY).toBeGreaterThanOrEqual(40)
+    expect(iconBounds.maxX).toBeLessThanOrEqual(472)
+    expect(iconBounds.maxY).toBeLessThanOrEqual(456)
+    expect(maskableBounds.minX).toBeGreaterThanOrEqual(72)
+    expect(maskableBounds.minY).toBeGreaterThanOrEqual(72)
+    expect(maskableBounds.maxX).toBeLessThanOrEqual(440)
+    expect(maskableBounds.maxY).toBeLessThanOrEqual(440)
   })
 })
