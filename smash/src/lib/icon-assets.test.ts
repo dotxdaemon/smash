@@ -22,6 +22,7 @@ describe('icon assets', () => {
     expect(maskableIcon).toContain('aria-label="Palutena stock logo maskable icon"')
     expect(icon).toContain('shape-rendering="crispEdges"')
     expect(maskableIcon).toContain('shape-rendering="crispEdges"')
+    expect(icon).not.toContain('<rect width="512" height="512" fill=')
     expect(icon).not.toContain('href="data:image/png;base64,')
     expect(maskableIcon).not.toContain('href="data:image/png;base64,')
     expect(icon).not.toContain('stroke=')
