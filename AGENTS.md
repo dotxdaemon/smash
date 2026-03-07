@@ -567,3 +567,78 @@ For any reported bug, do not implement anything until all of the following are d
 10. Include before/after screenshots at the same viewport proving the specific bug is fixed.
 11. Do not provide PR links or claim completion until all gates pass.
 12. End with: root cause, files changed, what was removed/neutralized, acceptance checklist PASS/FAIL, exact commands run with exit codes.
+
+# AGENTS.md - iOS PWA App Rules
+
+## Stack
+- React + TypeScript + Vite
+- Versioned localStorage persistence
+- Service worker (offline-first)
+- Target: iOS Safari PWA (installed to home screen)
+
+---
+
+## Non-negotiable workflow rules
+
+### Before writing any code
+1. State the root cause in plain language. Not "the component re-renders" - explain why and what triggers it.
+2. Identify every file you intend to touch. If a file is outside the stated scope, stop and ask.
+3. If the fix touches the service worker or the versioned storage payload, call that out explicitly before proceeding - these have outsized side effects.
+
+### Writing code
+- One bug, one cause, one fix per session. Do not bundle unrelated changes.
+- Do not refactor, rename, or reformat anything not directly related to the stated issue.
+- Do not add comments unless asked.
+- Do not change CSS that is not broken. iOS Safari compositing and scroll bugs are extremely sensitive to seemingly unrelated style changes.
+
+### After writing code
+- Run the relevant build or type-check command and paste the exact terminal output - no summaries, no paraphrasing.
+- If a command cannot be run, say so explicitly. Do not infer success.
+- If TypeScript errors exist, fix them before presenting the solution as complete.
+
+---
+
+## iOS Safari hard rules
+
+- No `overflow: hidden` on `body` or `html` unless you can prove it does not break Safari's momentum scroll on inner containers.
+- `position: fixed` elements require `-webkit-overflow-scrolling: touch` on their scroll ancestors or they will stutter or freeze on scroll.
+- `will-change: transform` and `translateZ(0)` create new compositing layers. Do not add or remove these without understanding the current layer tree. Do not add them as a catch-all "performance fix."
+- `100vh` is wrong on iOS Safari. Use `100dvh` or a JS-measured value. Never use `100vh` for full-height layout.
+- Safe area insets (`env(safe-area-inset-*)`) must be applied wherever content could be obscured by the notch or home indicator. Do not remove existing safe area padding.
+- Service worker updates do not take effect immediately in iOS Safari PWA mode. Do not tell me a service worker change is live until the app has been closed and reopened. If testing service worker behavior, say so explicitly.
+- localStorage payload changes must preserve versioned reads and writes. Do not change the stored shape without calling out the version impact explicitly before proceeding.
+
+---
+
+## Verification protocol
+
+For any fix involving:
+- Scroll behavior -> describe the exact scroll container hierarchy after the change
+- Compositing / animation -> identify which layers exist and why
+- Service worker -> confirm what was tested directly and what still requires closing and reopening the iOS PWA
+- Storage payload version -> confirm the version change and fallback handling are present
+- TypeScript -> paste `tsc -b` output
+
+Do not present a fix as complete until you have pasted actual output for the relevant check above.
+
+---
+
+## What "done" means
+
+A task is done when:
+1. The stated problem is fixed at its root cause
+2. No unrelated files were modified
+3. Terminal output has been pasted confirming no build or type errors
+4. You have identified any regression risk the change introduces
+
+If you cannot confirm all four, say what is missing.
+
+---
+
+## Prohibited behaviors
+
+- Do not summarize terminal output. Paste it verbatim.
+- Do not say a fix "should work" without running it.
+- Do not speculatively add error handling, loading states, or fallbacks that were not requested.
+- Do not change the color scheme, spacing, or component structure unless that is the explicit task.
+- Do not upgrade dependencies unless asked.
