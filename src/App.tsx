@@ -1,15 +1,16 @@
-// ABOUTME: Renders the Smash Matchup Lab notebook UI with keyboard-first logging and analytics views.
+// ABOUTME: Renders the Smash Matchup Lab interface with Tailwind-based views and keyboard-first logging.
 // ABOUTME: Connects local entry persistence, recurrence summaries, drill mapping, and filters.
 import {
+  type ComponentPropsWithoutRef,
   type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
   type RefObject,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react'
-import './App.css'
 import { CHARACTERS } from './data/characters'
 import {
   computeWorstMatchups,
@@ -25,7 +26,9 @@ import {
   DEATH_CAUSE_CATEGORIES,
   SITUATION_TAGS,
   STOCK_CONTEXTS,
+  type ConfidenceLevel,
   type DeathCauseCategory,
+  type Drill,
   type MatchEntry,
   type SituationTag,
 } from './types'
@@ -35,12 +38,15 @@ type View = 'dashboard' | 'entry' | 'matchup' | 'log' | 'drills'
 interface ViewItem {
   view: View
   title: string
-  step: string
-  detail: string
 }
 
 interface AppProps {
   initialView?: View
+}
+
+interface SummaryStat {
+  label: string
+  value: string | number
 }
 
 const DEFAULT_DRAFT: EntryInput = {
@@ -49,37 +55,24 @@ const DEFAULT_DRAFT: EntryInput = {
 }
 
 const VIEW_ITEMS: ViewItem[] = [
-  {
-    view: 'dashboard',
-    title: 'Dashboard',
-    step: '01',
-    detail: 'Overview',
-  },
-  {
-    view: 'entry',
-    title: 'New Entry',
-    step: '02',
-    detail: 'Log set',
-  },
-  {
-    view: 'matchup',
-    title: 'Matchup',
-    step: '03',
-    detail: 'Character',
-  },
-  {
-    view: 'log',
-    title: 'Entry Log',
-    step: '04',
-    detail: 'Search',
-  },
-  {
-    view: 'drills',
-    title: 'Drill Library',
-    step: '05',
-    detail: 'Practice',
-  },
+  { view: 'dashboard', title: 'Dashboard' },
+  { view: 'entry', title: 'Log Set' },
+  { view: 'matchup', title: 'Matchups' },
+  { view: 'log', title: 'Notes' },
+  { view: 'drills', title: 'Drills' },
 ]
+
+const FIELD_INPUT_STYLES =
+  'mt-2 w-full rounded-[1rem] border border-line/70 bg-paper-strong px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-ink-faint focus:border-accent focus:ring-2 focus:ring-accent/15'
+
+const PRIMARY_BUTTON_STYLES =
+  'inline-flex items-center justify-center rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-paper-strong shadow-[0_8px_18px_rgba(151,69,34,0.22)] transition hover:bg-accent-strong'
+
+const SECONDARY_BUTTON_STYLES =
+  'inline-flex items-center justify-center rounded-full border border-line/80 bg-paper-strong px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-line-strong hover:bg-paper-soft'
+
+const TEXT_BUTTON_STYLES =
+  'inline-flex items-center gap-2 text-sm font-semibold text-accent transition hover:text-accent-strong'
 
 function App({ initialView = 'dashboard' }: AppProps) {
   const [initialState] = useState(loadState)
@@ -232,98 +225,71 @@ function App({ initialView = 'dashboard' }: AppProps) {
     pinnedDrills.includes(drill.title),
   )
 
-  const activeViewItem =
-    VIEW_ITEMS.find((item) => item.view === activeView) ?? VIEW_ITEMS[0]
+  const overallTopIssue = useMemo(
+    () => rankDeathCauseCategories(entries, 1)[0]?.category,
+    [entries],
+  )
 
-  const coverRule =
+  const pressurePoints = useMemo(
+    () =>
+      lastThirtyDaysWorst.map((item) => {
+        const summary = summarizeMatchup(entries, item.opponentCharacter)
+        return {
+          ...item,
+          issue: summary.topDeathCauseCategory ?? 'Pattern still forming',
+        }
+      }),
+    [entries, lastThirtyDaysWorst],
+  )
+
+  const drillPreview = useMemo(
+    () => (pinnedDrillCards.length > 0 ? pinnedDrillCards : rankedDrills).slice(0, 3),
+    [pinnedDrillCards, rankedDrills],
+  )
+
+  const currentFocusIssue =
+    (todayFocusSummary?.topDeathCauseCategory && todayFocus
+      ? `${todayFocusSummary.topDeathCauseCategory} vs ${todayFocus.opponentCharacter}`
+      : undefined) ??
+    (latestInsight?.topDeathCauseCategory
+      ? `${latestInsight.topDeathCauseCategory} vs ${latestInsight.opponentCharacter}`
+      : undefined) ??
+    overallTopIssue ??
+    'No recurring issue yet'
+
+  const currentFocusRule =
     todayFocus?.rule ??
     latestInsight?.focusRule ??
-    'Opponent required. Add the loss pattern and one next rule.'
+    'Log your first set to turn a vague problem into one clear next rule.'
 
-  const coverOpponent =
-    todayFocus?.opponentCharacter ?? latestInsight?.opponentCharacter
+  const currentFocusDrill =
+    todayFocusSummary?.nextDrill ??
+    latestInsight?.nextDrill ?? {
+      title: 'No drill yet',
+      description: 'Your notes will turn into a drill suggestion after the first set log.',
+      categories: [],
+      tags: [],
+    }
 
-  const focusDrill =
-    todayFocusSummary?.nextDrill.title ??
-    latestInsight?.nextDrill.title ??
-    'Save one note to generate a drill.'
+  const summaryStats: SummaryStat[] = [
+    { label: 'Sets logged', value: entries.length },
+    { label: 'Matchups tracked', value: trackedMatchups },
+    { label: 'Most frequent issue', value: overallTopIssue ?? 'No pattern yet' },
+    { label: 'Pinned drills', value: pinnedDrills.length },
+  ]
 
-  const mastheadTitle = (() => {
+  const shellPurpose = (() => {
     switch (activeView) {
       case 'dashboard':
-        return 'Build matchup answers after every set.'
+        return 'Track what keeps costing stocks and turn each set into one next action.'
       case 'entry':
-        return 'Log the set while it is fresh.'
+        return 'Capture the exact habit, the one thing that worked, and the rule to test next set.'
       case 'matchup':
-        return selectedOpponent
-          ? `${selectedOpponent} matchup notebook`
-          : 'Matchup notebook'
+        return 'Review one opponent page for recurring deaths, tags, rules, clips, and drills.'
       case 'log':
-        return 'Search your set notes fast.'
+        return 'Search every note by opponent, tag, stage, date, or death-cause text.'
       case 'drills':
-        return 'Keep your next reps pinned.'
-    }
-  })()
-
-  const mastheadCopy = (() => {
-    switch (activeView) {
-      case 'dashboard':
-        return 'One rule, one drill, one place to see what keeps costing you stocks.'
-      case 'entry':
-        return 'Capture the exact stock-loss pattern, what worked, and the next constraint to test.'
-      case 'matchup':
-        return 'Use one opponent page to track recurring deaths, tags, drills, and clips.'
-      case 'log':
-        return 'Filter the notebook by opponent, tag, stage, date, or death note without leaving the keyboard flow.'
-      case 'drills':
-        return 'Pin the practice reps you want visible before the next session starts.'
-    }
-  })()
-
-  const mastheadSecondaryAction = (() => {
-    switch (activeView) {
-      case 'dashboard':
-        return {
-          label: 'Open log',
-          onClick: () => setActiveView('log'),
-        }
-      case 'entry':
-        return {
-          label: 'Back to dashboard',
-          onClick: () => setActiveView('dashboard'),
-        }
-      case 'matchup':
-        return {
-          label: 'Open log',
-          onClick: () => setActiveView('log'),
-        }
-      case 'log':
-        return {
-          label: 'Review drills',
-          onClick: () => setActiveView('drills'),
-        }
-      case 'drills':
-        return {
-          label: 'Back to dashboard',
-          onClick: () => setActiveView('dashboard'),
-        }
-    }
-  })()
-
-  const mastheadPrimaryAction = (() => {
-    if (activeView === 'entry') {
-      return {
-        label: 'Focus opponent',
-        onClick: () => focusSoon(opponentInputRef),
-      }
-    }
-
-    return {
-      label: 'Quick log a note',
-      onClick: () => {
-        setActiveView('entry')
-        focusSoon(opponentInputRef)
-      },
+        return 'Keep the practice reps you want visible before the next session starts.'
     }
   })()
 
@@ -480,240 +446,70 @@ function App({ initialView = 'dashboard' }: AppProps) {
   }
 
   return (
-    <div className="app-shell" data-shell="tournament-notebook">
-      <a className="skip-link" href="#main-content">
+    <div
+      className="mx-auto flex min-h-dvh max-w-7xl flex-col gap-5 px-3 pb-28 pt-4 sm:px-5 lg:px-8"
+      data-shell="tournament-notebook"
+    >
+      <a
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-30 focus:rounded-full focus:bg-paper-strong focus:px-4 focus:py-2"
+        href="#main-content"
+      >
         Skip to main content
       </a>
       <p className="sr-only" role="status" aria-live="polite">
         {saveStatus}
       </p>
-      <header className="masthead panel animated-entry" data-section="masthead">
-        <div className="masthead__top">
-          <div className="masthead__copy">
-            <p className="eyebrow">Smash Matchup Lab</p>
-            <div className="masthead__title-row">
-              <h1>{mastheadTitle}</h1>
-              <span className="masthead__view">{activeViewItem.title}</span>
-            </div>
-            <p className="masthead__lede">{mastheadCopy}</p>
-          </div>
 
-          <div className="masthead__actions">
-            <button
-              type="button"
-              className="cover-button"
-              onClick={mastheadPrimaryAction.onClick}
-            >
-              {mastheadPrimaryAction.label}
-            </button>
-            <button
-              type="button"
-              className="cover-button cover-button--secondary"
-              onClick={mastheadSecondaryAction.onClick}
-            >
-              {mastheadSecondaryAction.label}
-            </button>
-          </div>
-        </div>
-
-        <div className="masthead__rail">
-          <div className="masthead__focus">
-            <span className="masthead__label">
-              {coverOpponent ? `Focus / ${coverOpponent}` : 'Current focus'}
-            </span>
-            <strong>{coverRule}</strong>
-          </div>
-        </div>
-      </header>
-
-      <NotebookNavigation
+      <DashboardHeader
         activeView={activeView}
-        ariaLabel="Notebook navigation"
-        className="view-nav view-nav--desktop panel animated-entry delay-1"
-        onSelect={setActiveView}
+        onOpenEntry={() => {
+          setActiveView('entry')
+          focusSoon(opponentInputRef)
+        }}
+        onOpenLog={() => setActiveView('log')}
+        onSelectView={setActiveView}
+        shellPurpose={shellPurpose}
       />
 
-      <main
-        id="main-content"
-        className="view-panel notebook-panel panel animated-entry delay-2"
-        tabIndex={-1}
-      >
+      <main id="main-content" className="flex flex-col gap-5" tabIndex={-1}>
         {activeView === 'dashboard' && (
-          <section className="dashboard-view">
-            <div className="dashboard-grid">
-              <article className="focus-board notebook-card" data-section="focus-board">
-                <div className="panel-heading">
-                  <div>
-                    <p className="section-kicker">Today</p>
-                    <h2>
-                      {todayFocus
-                        ? `Carry one clear rule into your next ${todayFocus.opponentCharacter} set.`
-                        : 'Turn one bad set into the next drill.'}
-                    </h2>
-                  </div>
-                </div>
-
-                <p className="lead-sheet__copy">
-                  {todayFocus
-                    ? todayFocus.rule
-                    : 'Add one note after a set and the app turns it into one drill and one focus rule.'}
-                </p>
-
-                <dl className="dashboard-metrics" data-section="dashboard-metrics">
-                  <div className="dashboard-metric">
-                    <dt>Entries logged</dt>
-                    <dd>{entries.length}</dd>
-                  </div>
-                  <div className="dashboard-metric">
-                    <dt>Matchups tracked</dt>
-                    <dd>{trackedMatchups}</dd>
-                  </div>
-                  <div className="dashboard-metric">
-                    <dt>Latest note</dt>
-                    <dd>{sortedEntries[0]?.opponentCharacter ?? 'No entries'}</dd>
-                  </div>
-                  <div className="dashboard-metric">
-                    <dt>Pinned drills</dt>
-                    <dd>{pinnedDrills.length}</dd>
-                  </div>
-                </dl>
-
-                <div className="focus-board__footer">
-                  <div className="focus-board__next">
-                    <span className="metric-card__label">Next drill</span>
-                    <strong>{focusDrill}</strong>
-                  </div>
-
-                  {todayFocus ? (
-                    <button
-                      type="button"
-                      className="cover-button cover-button--secondary"
-                      onClick={() => openMatchup(todayFocus.opponentCharacter)}
-                    >
-                      Open matchup
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="cover-button cover-button--secondary"
-                      onClick={() => setActiveView('drills')}
-                    >
-                      Review drills
-                    </button>
-                  )}
-                </div>
-              </article>
-
-            </div>
-
-            <div className="dashboard-ledger">
-              <article className="ledger-panel notebook-card">
-                <div className="panel-heading">
-                  <div>
-                    <p className="section-kicker">Ledger</p>
-                    <h3>Recent set notes</h3>
-                  </div>
-                  <button
-                    type="button"
-                    className="inline-link"
-                    onClick={() => setActiveView('log')}
-                  >
-                    Open full log
-                  </button>
-                </div>
-
-                {sortedEntries.slice(0, 5).length > 0 ? (
-                  <ul className="ledger-list">
-                    {sortedEntries.slice(0, 5).map((entry, index) => (
-                      <li key={entry.id} className="ledger-row">
-                        <span className="ledger-row__index">{String(index + 1).padStart(2, '0')}</span>
-                        <div className="ledger-row__body">
-                          <button
-                            type="button"
-                            className="inline-link ledger-row__title"
-                            onClick={() => openMatchup(entry.opponentCharacter)}
-                          >
-                            {entry.opponentCharacter}
-                          </button>
-                          <p>{entry.deathCauseText ?? 'No death cause logged'}</p>
-                        </div>
-                        <span className="ledger-row__meta">{formatDate(entry.date)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <NotebookEmptyState
-                    title="No entries yet"
-                    body="Add one note after your next set and patterns will start to show up here."
-                  />
-                )}
-              </article>
-
-              <div className="dashboard-stack">
-                <article className="notebook-card">
-                  <div className="panel-heading">
-                    <div>
-                      <p className="section-kicker">Pressure points</p>
-                      <h3>Worst 3 matchups</h3>
-                    </div>
-                    <span className="panel-heading__note">Last 30 days</span>
-                  </div>
-
-                  {lastThirtyDaysWorst.length > 0 ? (
-                    <ul className="rank-list">
-                      {lastThirtyDaysWorst.map((item, index) => (
-                        <li key={item.opponentCharacter} className="rank-list__item">
-                          <span className="rank-list__index">{index + 1}</span>
-                          <button
-                            type="button"
-                            className="inline-link rank-list__title"
-                            onClick={() => openMatchup(item.opponentCharacter)}
-                          >
-                            {item.opponentCharacter}
-                          </button>
-                          <span className="rank-list__count">{item.negativeCount}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <NotebookEmptyState
-                      title="No recurring problem matchups yet"
-                      body="Once negative notes build up, this board will show where your practice time should go."
-                    />
-                  )}
-                </article>
-              </div>
-            </div>
-          </section>
+          <DashboardPage
+            currentFocusDrill={currentFocusDrill}
+            currentFocusIssue={currentFocusIssue}
+            currentFocusRule={currentFocusRule}
+            drillPreview={drillPreview}
+            focusOpponent={todayFocus?.opponentCharacter ?? latestInsight?.opponentCharacter}
+            onOpenDrills={() => setActiveView('drills')}
+            onOpenLog={() => setActiveView('log')}
+            onOpenMatchup={openMatchup}
+            onToggleDrillPin={onToggleDrillPin}
+            pinnedCount={pinnedDrills.length}
+            pinnedTitles={pinnedDrills}
+            pressurePoints={pressurePoints}
+            recentEntries={sortedEntries.slice(0, 4)}
+            summaryStats={summaryStats}
+          />
         )}
 
         {activeView === 'entry' && (
-          <section className="entry-view">
-            <article className="entry-sheet notebook-card">
-              <div className="panel-heading panel-heading--split">
-                <div>
-                  <p className="section-kicker">Match log</p>
-                  <h2 id="entry-title">New Entry</h2>
-                </div>
-                <p className="panel-heading__note">Opponent is the only required field.</p>
-              </div>
+          <section className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
+            <SectionCard className="px-4 py-5 sm:px-6 sm:py-6">
+              <SectionHeading
+                eyebrow="Match log"
+                title={<h2 id="entry-title" className="text-[1.9rem] leading-tight text-ink">Log Set</h2>}
+                description="Capture the matchup, the stock-loss habit, and the next rule while the set is still fresh."
+                note="Opponent is the only required field."
+              />
 
-              <form
-                className="entry-form"
-                onSubmit={onSaveEntry}
-                aria-describedby="entry-shortcuts"
-              >
-                <section className="form-block">
-                  <div className="form-block__heading">
-                    <h3>Set context</h3>
-                    <p>Who you played, where it happened, and what phase kept repeating.</p>
-                  </div>
-
-                  <label className="command-row">
-                    <span className="command-key">C</span>
-                    <span className="command-name">opponent</span>
+              <form className="mt-6 flex flex-col gap-6" onSubmit={onSaveEntry} aria-describedby="entry-shortcuts">
+                <FormBlock
+                  description="Who you played, where it happened, and which situation kept repeating."
+                  title="Set context"
+                >
+                  <FieldShell label="Opponent" shortcut="C">
                     <input
                       ref={opponentInputRef}
+                      className={FIELD_INPUT_STYLES}
                       list="character-options"
                       value={draft.opponentCharacter}
                       onChange={(event) =>
@@ -722,36 +518,33 @@ function App({ initialView = 'dashboard' }: AppProps) {
                       placeholder="Zero Suit Samus"
                       required
                     />
-                  </label>
+                  </FieldShell>
 
-                  <label className="command-row">
-                    <span className="command-key">Y</span>
-                    <span className="command-name">your character</span>
+                  <FieldShell label="Your character" shortcut="Y">
                     <input
+                      className={FIELD_INPUT_STYLES}
                       value={draft.yourCharacter ?? ''}
                       onChange={(event) =>
                         onDraftChange('yourCharacter', event.target.value)
                       }
                       placeholder="Wolf"
                     />
-                  </label>
+                  </FieldShell>
 
-                  <div className="command-grid">
-                    <label className="command-row">
-                      <span className="command-key">S</span>
-                      <span className="command-name">stage</span>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <FieldShell label="Stage" shortcut="S">
                       <input
+                        className={FIELD_INPUT_STYLES}
                         list="stage-options"
                         value={draft.stage ?? ''}
                         onChange={(event) => onDraftChange('stage', event.target.value)}
                         placeholder="PS2"
                       />
-                    </label>
+                    </FieldShell>
 
-                    <label className="command-row">
-                      <span className="command-key">K</span>
-                      <span className="command-name">stock context</span>
+                    <FieldShell label="Stock context" shortcut="K">
                       <select
+                        className={FIELD_INPUT_STYLES}
                         value={draft.stockContext ?? ''}
                         onChange={(event) =>
                           onDraftChange(
@@ -769,15 +562,13 @@ function App({ initialView = 'dashboard' }: AppProps) {
                           </option>
                         ))}
                       </select>
-                    </label>
+                    </FieldShell>
                   </div>
 
-                  <label className="command-row command-row--stacked">
-                    <span className="command-key">T</span>
-                    <span className="command-name">tags</span>
+                  <FieldShell label="Situation tags" shortcut="T">
                     <div
                       ref={tagPickerRef}
-                      className="tag-picker"
+                      className="mt-2 flex min-h-12 flex-wrap gap-2 rounded-[1rem] border border-line/70 bg-paper-soft px-3 py-3"
                       tabIndex={0}
                       onKeyDown={onTagPickerKeyDown}
                       role="group"
@@ -791,9 +582,13 @@ function App({ initialView = 'dashboard' }: AppProps) {
                           <button
                             key={tag}
                             type="button"
-                            className={`tag-chip ${active ? 'active' : ''} ${
-                              highlighted ? 'highlighted' : ''
-                            }`}
+                            className={joinClassNames(
+                              'rounded-full border px-3 py-1.5 text-sm transition',
+                              active
+                                ? 'border-support/30 bg-support/10 text-support'
+                                : 'border-line/70 bg-paper-strong text-ink-soft hover:border-line-strong',
+                              highlighted && 'ring-2 ring-accent/25',
+                            )}
                             onClick={() => toggleTag(tag)}
                             onFocus={() => setTagCursor(index)}
                             aria-pressed={active}
@@ -803,21 +598,18 @@ function App({ initialView = 'dashboard' }: AppProps) {
                         )
                       })}
                     </div>
-                  </label>
-                </section>
+                  </FieldShell>
+                </FormBlock>
 
-                <section className="form-block">
-                  <div className="form-block__heading">
-                    <h3>Loss pattern</h3>
-                    <p>Write the exact thing that kept costing you stocks.</p>
-                  </div>
-
-                  <div className="command-grid">
-                    <label className="command-row">
-                      <span className="command-key">D</span>
-                      <span className="command-name">death cause</span>
+                <FormBlock
+                  description="Write the exact habit or option that kept costing you stocks."
+                  title="Loss pattern"
+                >
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <FieldShell label="Death cause" shortcut="D">
                       <input
                         ref={deathCauseRef}
+                        className={FIELD_INPUT_STYLES}
                         list="death-cause-history"
                         value={draft.deathCauseText ?? ''}
                         onChange={(event) =>
@@ -825,12 +617,11 @@ function App({ initialView = 'dashboard' }: AppProps) {
                         }
                         placeholder="jumped from ledge into fair"
                       />
-                    </label>
+                    </FieldShell>
 
-                    <label className="command-row">
-                      <span className="command-key">G</span>
-                      <span className="command-name">category</span>
+                    <FieldShell label="Category" shortcut="G">
                       <select
+                        className={FIELD_INPUT_STYLES}
                         value={draft.deathCauseCategory ?? ''}
                         onChange={(event) =>
                           onDraftChange(
@@ -848,61 +639,55 @@ function App({ initialView = 'dashboard' }: AppProps) {
                           </option>
                         ))}
                       </select>
-                    </label>
+                    </FieldShell>
                   </div>
 
-                  <label className="command-row">
-                    <span className="command-key">W</span>
-                    <span className="command-name">what worked</span>
+                  <FieldShell label="What worked" shortcut="W">
                     <input
                       ref={whatWorkedRef}
+                      className={FIELD_INPUT_STYLES}
                       value={draft.whatWorked ?? ''}
                       onChange={(event) => onDraftChange('whatWorked', event.target.value)}
                       placeholder="holding center"
                     />
-                  </label>
+                  </FieldShell>
 
-                  <label className="command-row">
-                    <span className="command-key">R</span>
-                    <span className="command-name">rule next set</span>
+                  <FieldShell label="Rule for next set" shortcut="R">
                     <input
                       ref={ruleRef}
+                      className={FIELD_INPUT_STYLES}
                       value={draft.oneRuleNextTime ?? ''}
                       onChange={(event) =>
                         onDraftChange('oneRuleNextTime', event.target.value)
                       }
-                      placeholder="no jump from ledge unless they commit"
+                      placeholder="No jump from corner until they commit"
                     />
-                  </label>
-                </section>
+                  </FieldShell>
+                </FormBlock>
 
-                <section className="form-block">
-                  <div className="form-block__heading">
-                    <h3>Review notes</h3>
-                    <p>Link the clip and keep any last notes concise.</p>
-                  </div>
-
-                  <div className="command-grid">
-                    <label className="command-row">
-                      <span className="command-key">L</span>
-                      <span className="command-name">clip link</span>
+                <FormBlock
+                  description="Attach a clip, confidence level, and any short notes you want to keep."
+                  title="Review notes"
+                >
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <FieldShell label="Clip link" shortcut="L">
                       <input
+                        className={FIELD_INPUT_STYLES}
                         value={draft.clipLink ?? ''}
                         onChange={(event) => onDraftChange('clipLink', event.target.value)}
                         placeholder="https://..."
                       />
-                    </label>
+                    </FieldShell>
 
-                    <label className="command-row">
-                      <span className="command-key">F</span>
-                      <span className="command-name">confidence</span>
+                    <FieldShell label="Confidence" shortcut="F">
                       <select
+                        className={FIELD_INPUT_STYLES}
                         value={draft.confidence ?? ''}
                         onChange={(event) =>
                           onDraftChange(
                             'confidence',
                             event.target.value
-                              ? (Number(event.target.value) as 1 | 2 | 3)
+                              ? (Number(event.target.value) as ConfidenceLevel)
                               : undefined,
                           )
                         }
@@ -912,112 +697,101 @@ function App({ initialView = 'dashboard' }: AppProps) {
                         <option value="2">2</option>
                         <option value="3">3</option>
                       </select>
-                    </label>
+                    </FieldShell>
                   </div>
 
-                  <label className="command-row command-row--notes">
-                    <span className="command-key">N</span>
-                    <span className="command-name">notes</span>
+                  <FieldShell label="Notes" shortcut="N">
                     <textarea
+                      className={`${FIELD_INPUT_STYLES} min-h-32 resize-y`}
                       value={draft.notes ?? ''}
                       onChange={(event) => onDraftChange('notes', event.target.value)}
                       rows={4}
                     />
-                  </label>
-                </section>
+                  </FieldShell>
+                </FormBlock>
 
                 {formError && (
-                  <p className="error-text" role="alert">
+                  <p className="text-sm font-semibold text-danger" role="alert">
                     {formError}
                   </p>
                 )}
 
-                <div className="save-bar">
-                  <p id="entry-shortcuts" className="save-bar__note">
+                <div className="flex flex-col gap-3 border-t border-line/70 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                  <p id="entry-shortcuts" className="text-sm leading-6 text-ink-soft">
                     Opponent required. Shortcuts: C opponent, T tags, D death cause, R rule, Enter save.
                   </p>
-                  <button type="submit" className="save-button">
-                    Save note (Enter)
+                  <button type="submit" className={PRIMARY_BUTTON_STYLES}>
+                    Save note
                   </button>
                 </div>
               </form>
-            </article>
+            </SectionCard>
 
-            <aside className="entry-side">
-              <article className="insight-card insight-card--primary">
-                <div className="panel-heading">
-                  <div>
-                    <p className="section-kicker">Immediate output</p>
-                    <h3>Next actionable read</h3>
-                  </div>
+            <div className="flex flex-col gap-5">
+              <SectionCard className="px-4 py-5 sm:px-5 sm:py-6">
+                <SectionHeading
+                  eyebrow="Immediate output"
+                  title={<h3 className="text-[1.45rem] leading-tight text-ink">Next read</h3>}
+                  description="The app turns your last note into one failure pattern, one drill, and one focus rule."
+                />
+
+                <div className="mt-5">
+                  {latestInsight ? (
+                    <div className="space-y-4">
+                      <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
+                        vs {latestInsight.opponentCharacter}
+                      </p>
+                      <FocusLine label="Recurring failure" value={latestInsight.topDeathCauseCategory ?? 'Not enough category data yet'} />
+                      <FocusLine label="Next drill" value={latestInsight.nextDrill.title} />
+                      <FocusLine label="Focus rule" value={latestInsight.focusRule} />
+                      <button
+                        type="button"
+                        className={SECONDARY_BUTTON_STYLES}
+                        onClick={() => openMatchup(latestInsight.opponentCharacter)}
+                      >
+                        Open matchup page
+                      </button>
+                    </div>
+                  ) : (
+                    <EmptyState
+                      body="Save a note to generate the next read."
+                      title="No output yet"
+                    />
+                  )}
                 </div>
+              </SectionCard>
 
-                {latestInsight ? (
-                  <>
-                    <p className="insight-card__opponent">
-                      vs {latestInsight.opponentCharacter}
-                    </p>
-                    <p className="insight-card__line">
-                      <strong>Recurring failure</strong>
-                      <span>
-                        {latestInsight.topDeathCauseCategory ??
-                          'Not enough category data yet'}
-                      </span>
-                    </p>
-                    <p className="insight-card__line">
-                      <strong>Next drill</strong>
-                      <span>{latestInsight.nextDrill.title}</span>
-                    </p>
-                    <p className="insight-card__line">
-                      <strong>Focus rule</strong>
-                      <span>{latestInsight.focusRule}</span>
-                    </p>
-                    <button
-                      type="button"
-                      className="cover-button cover-button--secondary"
-                      onClick={() => openMatchup(latestInsight.opponentCharacter)}
-                    >
-                      Open matchup page
-                    </button>
-                  </>
-                ) : (
-                  <NotebookEmptyState
-                    title="No output yet"
-                    body="Save a note and the app will surface the main problem, next drill, and focus rule."
-                  />
-                )}
-              </article>
-
-              <article className="insight-card">
-                <div className="panel-heading">
-                  <div>
-                    <p className="section-kicker">Shortcuts</p>
-                    <h3>Keyboard flow</h3>
-                  </div>
-                </div>
-                <ul className="command-legend">
-                  <li><span>`C`</span> choose opponent</li>
-                  <li><span>`T`</span> tag the situation</li>
-                  <li><span>`D`</span> capture what killed you</li>
-                  <li><span>`R`</span> write the one next-set rule</li>
+              <SectionCard className="px-4 py-5 sm:px-5 sm:py-6">
+                <SectionHeading
+                  eyebrow="Keyboard flow"
+                  title={<h3 className="text-[1.45rem] leading-tight text-ink">Shortcuts</h3>}
+                  description="Use the logging flow like a terminal command instead of a long form."
+                />
+                <ul className="mt-4 space-y-3 text-sm text-ink-soft">
+                  <li><span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">C</span> Choose opponent</li>
+                  <li><span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">T</span> Tag the situation</li>
+                  <li><span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">D</span> Capture what killed you</li>
+                  <li><span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">R</span> Write the next-set rule</li>
                 </ul>
-              </article>
-            </aside>
+              </SectionCard>
+            </div>
           </section>
         )}
 
         {activeView === 'matchup' && (
-          <section className="matchup-view">
-            <article className="matchup-sheet notebook-card">
-              <div className="matchup-sheet__header">
-                <div>
-                  <p className="section-kicker">Matchup notebook</p>
-                  <h2>{selectedOpponent || 'Choose an opponent'}</h2>
-                </div>
+          <section className="flex flex-col gap-5">
+            <SectionCard className="px-4 py-5 sm:px-6 sm:py-6">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                <SectionHeading
+                  eyebrow="Matchups"
+                  title={<h2 className="text-[1.9rem] leading-tight text-ink">{selectedOpponent || 'Choose an opponent'}</h2>}
+                  description="Review recurring deaths, top tags, last rule, clips, and the drill the app keeps pointing you toward."
+                />
 
-                <label className="matchup-picker">
-                  <span>Opponent</span>
+                <label className="block max-w-xs text-sm font-medium text-ink-soft">
+                  Opponent
                   <input
+                    className={FIELD_INPUT_STYLES}
                     list="character-options"
                     value={selectedOpponent}
                     onChange={(event) => setSelectedOpponent(event.target.value)}
@@ -1025,179 +799,183 @@ function App({ initialView = 'dashboard' }: AppProps) {
                   />
                 </label>
               </div>
+            </SectionCard>
 
-              {!selectedOpponent ? (
-                <NotebookEmptyState
+            {!selectedOpponent ? (
+              <SectionCard className="px-4 py-6 sm:px-6">
+                <EmptyState
+                  body="Choose an opponent to load trends, top causes, tags, and drill guidance."
                   title="No matchup selected"
-                  body="Choose an opponent to load the trend line, death causes, tags, and drill recommendations."
                 />
-              ) : matchupSummary && matchupSummary.totalEntries > 0 ? (
-                <>
-                  <div className="matchup-sheet__lead">
-                    <div className="matchup-sheet__copy">
-                      <p className="matchup-sheet__copy-label">Primary leak</p>
-                      <h3>{matchupSummary.topDeathCauseCategory ?? 'Pattern still forming'}</h3>
-                      <p>{matchupSummary.focusRule}</p>
+              </SectionCard>
+            ) : matchupSummary && matchupSummary.totalEntries > 0 ? (
+              <>
+                <SectionCard className="surface-muted px-4 py-5 sm:px-6 sm:py-6">
+                  <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)]">
+                    <div className="space-y-4">
+                      <SectionHeading
+                        eyebrow="Primary leak"
+                        title={<h3 className="text-[1.7rem] leading-tight text-ink">{matchupSummary.topDeathCauseCategory ?? 'Pattern still forming'}</h3>}
+                        description={matchupSummary.focusRule}
+                      />
                     </div>
-
-                    <div className="matchup-sheet__note">
-                      <span className="matchup-sheet__note-label">Recommended drill</span>
-                      <strong>{matchupSummary.nextDrill.title}</strong>
-                      <p>{matchupSummary.nextDrill.description}</p>
+                    <div className="rounded-[1.2rem] border border-line/70 bg-paper-strong/80 p-4">
+                      <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">Suggested drill</p>
+                      <p className="mt-2 font-display text-[1.2rem] leading-tight text-ink">{matchupSummary.nextDrill.title}</p>
+                      <p className="mt-2 text-sm leading-6 text-ink-soft">{matchupSummary.nextDrill.description}</p>
                     </div>
                   </div>
+                </SectionCard>
 
-                  <div className="matchup-grid">
-                    <article className="notebook-card">
-                      <div className="panel-heading">
-                        <div>
-                          <p className="section-kicker">Trend</p>
-                          <h3>Entries per week</h3>
-                        </div>
-                      </div>
-
+                <div className="grid gap-5 xl:grid-cols-2">
+                  <SectionCard className="px-4 py-5 sm:px-5 sm:py-6">
+                    <SectionHeading
+                      eyebrow="Trend"
+                      title={<h3 className="text-[1.45rem] leading-tight text-ink">Entries per week</h3>}
+                    />
+                    <div className="mt-5">
                       {matchupTrend.length > 0 ? (
-                        <ul className="trend-list">
+                        <ul className="space-y-3">
                           {matchupTrend.map((point) => (
-                            <li key={point.weekStart}>
+                            <li key={point.weekStart} className="grid grid-cols-[88px_minmax(0,1fr)_32px] items-center gap-3 text-sm text-ink-soft">
                               <span>{formatWeek(point.weekStart)}</span>
-                              <div className="trend-bar-shell">
+                              <div className="h-2 rounded-full bg-paper-muted">
                                 <div
-                                  className="trend-bar"
+                                  className="h-2 rounded-full bg-accent"
                                   style={{ width: `${Math.max(18, point.count * 28)}px` }}
                                 />
                               </div>
-                              <span>{point.count}</span>
+                              <span className="text-right font-semibold text-ink">{point.count}</span>
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <NotebookEmptyState
+                        <EmptyState
+                          body="Keep logging this opponent and the weekly trend will fill in."
                           title="No trend points yet"
-                          body="Keep logging this opponent and the notebook will start showing your weekly volume."
                         />
                       )}
-                    </article>
+                    </div>
+                  </SectionCard>
 
-                    <article className="notebook-card">
-                      <div className="panel-heading">
-                        <div>
-                          <p className="section-kicker">Loss profile</p>
-                          <h3>Top death causes</h3>
-                        </div>
-                      </div>
-
+                  <SectionCard className="px-4 py-5 sm:px-5 sm:py-6">
+                    <SectionHeading
+                      eyebrow="Loss profile"
+                      title={<h3 className="text-[1.45rem] leading-tight text-ink">Top death causes</h3>}
+                    />
+                    <div className="mt-5">
                       {matchupDeathCauses.length > 0 ? (
-                        <ul className="rank-list">
+                        <ul className="divide-y divide-line/70">
                           {matchupDeathCauses.map((item, index) => (
-                            <li key={item.category} className="rank-list__item">
-                              <span className="rank-list__index">{index + 1}</span>
-                              <span className="rank-list__title">{item.category}</span>
-                              <span className="rank-list__count">{item.count}</span>
+                            <li key={item.category} className="grid grid-cols-[32px_minmax(0,1fr)_40px] items-center gap-3 py-3">
+                              <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">{index + 1}</span>
+                              <span className="text-sm font-semibold text-ink">{item.category}</span>
+                              <span className="text-right text-sm font-semibold text-ink">{item.count}</span>
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <NotebookEmptyState
-                          title="No death causes logged yet"
-                          body="Tag the exact thing that killed you and this ranking will sharpen quickly."
+                        <EmptyState
+                          body="Add exact death-cause categories and this ranking will sharpen quickly."
+                          title="No death causes yet"
                         />
                       )}
-                    </article>
+                    </div>
+                  </SectionCard>
 
-                    <article className="notebook-card">
-                      <div className="panel-heading">
-                        <div>
-                          <p className="section-kicker">Situation profile</p>
-                          <h3>Top tags</h3>
-                        </div>
-                      </div>
-
+                  <SectionCard className="px-4 py-5 sm:px-5 sm:py-6">
+                    <SectionHeading
+                      eyebrow="Situation profile"
+                      title={<h3 className="text-[1.45rem] leading-tight text-ink">Top tags</h3>}
+                    />
+                    <div className="mt-5">
                       {matchupSummary.topTags.length > 0 ? (
-                        <div className="tag-cluster">
+                        <div className="flex flex-wrap gap-2">
                           {matchupSummary.topTags.map((tag) => (
-                            <span key={tag} className="tag-pill">
+                            <span key={tag} className="rounded-full border border-support/25 bg-support/10 px-3 py-1.5 text-sm text-support">
                               {tag}
                             </span>
                           ))}
                         </div>
                       ) : (
-                        <NotebookEmptyState
-                          title="No tags logged yet"
-                          body="Use the situation tags to reveal whether the problem keeps happening at ledge, in disadvantage, or elsewhere."
+                        <EmptyState
+                          body="Use situation tags to show whether the problem is ledge, landing, pressure, or neutral."
+                          title="No tags yet"
                         />
                       )}
-                    </article>
+                    </div>
+                  </SectionCard>
 
-                    <article className="notebook-card notebook-card--accent">
-                      <div className="panel-heading">
-                        <div>
-                          <p className="section-kicker">Saved note</p>
-                          <h3>Last rule and drill</h3>
-                        </div>
-                      </div>
-
-                      <p className="drill-title">{matchupSummary.nextDrill.title}</p>
-                      <p>{matchupSummary.nextDrill.description}</p>
-                      <p className="matchup-rule">
-                        <strong>Last rule:</strong>{' '}
+                  <SectionCard className="surface-muted px-4 py-5 sm:px-5 sm:py-6">
+                    <SectionHeading
+                      eyebrow="Saved note"
+                      title={<h3 className="text-[1.45rem] leading-tight text-ink">Last rule and drill</h3>}
+                    />
+                    <div className="mt-5 space-y-3">
+                      <p className="font-display text-[1.2rem] leading-tight text-ink">{matchupSummary.nextDrill.title}</p>
+                      <p className="text-sm leading-6 text-ink-soft">{matchupSummary.nextDrill.description}</p>
+                      <p className="text-sm text-ink-soft">
+                        <span className="font-semibold text-ink">Last rule:</span>{' '}
                         {matchupLastRule ?? 'No saved rule yet'}
                       </p>
-                    </article>
+                    </div>
+                  </SectionCard>
+                </div>
 
-                    <article className="notebook-card notebook-card--full">
-                      <div className="panel-heading">
-                        <div>
-                          <p className="section-kicker">Clips</p>
-                          <h3>Linked review clips</h3>
-                        </div>
-                      </div>
-
-                      {matchupClips.length > 0 ? (
-                        <ul className="clip-list">
-                          {matchupClips.map((entry) => (
-                            <li key={entry.id}>
-                              <a href={entry.clipLink} target="_blank" rel="noreferrer">
-                                {formatDate(entry.date)}
-                              </a>
-                              <p>{entry.deathCauseText ?? 'No note'}</p>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <NotebookEmptyState
-                          title="No clips saved for this matchup"
-                          body="Attach a clip link whenever a stock loss is worth reviewing later."
-                        />
-                      )}
-                    </article>
+                <SectionCard className="px-4 py-5 sm:px-6 sm:py-6">
+                  <SectionHeading
+                    eyebrow="Clips"
+                    title={<h3 className="text-[1.45rem] leading-tight text-ink">Linked review clips</h3>}
+                  />
+                  <div className="mt-5">
+                    {matchupClips.length > 0 ? (
+                      <ul className="divide-y divide-line/70">
+                        {matchupClips.map((entry) => (
+                          <li key={entry.id} className="space-y-2 py-3">
+                            <a className="text-sm font-semibold text-accent hover:text-accent-strong" href={entry.clipLink} target="_blank" rel="noreferrer">
+                              {formatDate(entry.date)}
+                            </a>
+                            <p className="text-sm text-ink-soft">{entry.deathCauseText ?? 'No note'}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <EmptyState
+                        body="Attach clip links whenever a stock loss is worth reviewing later."
+                        title="No clips saved"
+                      />
+                    )}
                   </div>
-                </>
-              ) : (
-                <NotebookEmptyState
+                </SectionCard>
+              </>
+            ) : (
+              <SectionCard className="px-4 py-6 sm:px-6">
+                <EmptyState
+                  body={`Log one set against ${selectedOpponent} and this page will populate automatically.`}
                   title={`No notes for ${selectedOpponent}`}
-                  body="Log one set from New Entry and this matchup notebook will populate automatically."
                 />
-              )}
-            </article>
+              </SectionCard>
+            )}
           </section>
         )}
 
         {activeView === 'log' && (
-          <section className="log-view">
-            <article className="filter-sheet notebook-card" role="search" aria-labelledby="log-title">
-              <div className="panel-heading">
-                <div>
-                  <p className="section-kicker">Search</p>
-                  <h2 id="log-title">Entry Log</h2>
-                </div>
-                <p className="panel-heading__note">Filter by opponent, tag, stage, date, or death note.</p>
-              </div>
+          <section className="flex flex-col gap-5">
+            <SectionCard
+              className="px-4 py-5 sm:px-6 sm:py-6"
+              role="search"
+              aria-labelledby="log-title"
+            >
+              <SectionHeading
+                eyebrow="Notes"
+                title={<h2 id="log-title" className="text-[1.9rem] leading-tight text-ink">Search notes</h2>}
+                description="Filter by opponent, tag, stage, date, or death-cause text without leaving the notebook."
+              />
 
-              <div className="filter-grid">
-                <label>
-                  <span>Opponent</span>
+              <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <FilterField label="Opponent">
                   <input
+                    className={FIELD_INPUT_STYLES}
                     list="character-options"
                     value={filters.opponentCharacter ?? ''}
                     onChange={(event) =>
@@ -1208,11 +986,11 @@ function App({ initialView = 'dashboard' }: AppProps) {
                     }
                     placeholder="Any"
                   />
-                </label>
+                </FilterField>
 
-                <label>
-                  <span>Tag</span>
+                <FilterField label="Tag">
                   <select
+                    className={FIELD_INPUT_STYLES}
                     value={filters.tag ?? ''}
                     onChange={(event) =>
                       setFilters((current) => ({
@@ -1230,11 +1008,11 @@ function App({ initialView = 'dashboard' }: AppProps) {
                       </option>
                     ))}
                   </select>
-                </label>
+                </FilterField>
 
-                <label>
-                  <span>Stage</span>
+                <FilterField label="Stage">
                   <input
+                    className={FIELD_INPUT_STYLES}
                     list="stage-options"
                     value={filters.stage ?? ''}
                     onChange={(event) =>
@@ -1245,11 +1023,11 @@ function App({ initialView = 'dashboard' }: AppProps) {
                     }
                     placeholder="Any"
                   />
-                </label>
+                </FilterField>
 
-                <label>
-                  <span>Start date</span>
+                <FilterField label="Start date">
                   <input
+                    className={FIELD_INPUT_STYLES}
                     type="date"
                     value={toDateInput(filters.startDate)}
                     onChange={(event) =>
@@ -1261,11 +1039,11 @@ function App({ initialView = 'dashboard' }: AppProps) {
                       }))
                     }
                   />
-                </label>
+                </FilterField>
 
-                <label>
-                  <span>End date</span>
+                <FilterField label="End date">
                   <input
+                    className={FIELD_INPUT_STYLES}
                     type="date"
                     value={toDateInput(filters.endDate)}
                     onChange={(event) =>
@@ -1277,11 +1055,11 @@ function App({ initialView = 'dashboard' }: AppProps) {
                       }))
                     }
                   />
-                </label>
+                </FilterField>
 
-                <label className="search-filter">
-                  <span>Search death cause</span>
+                <FilterField label="Search death cause">
                   <input
+                    className={FIELD_INPUT_STYLES}
                     value={filters.deathCauseSearch ?? ''}
                     onChange={(event) =>
                       setFilters((current) => ({
@@ -1291,145 +1069,108 @@ function App({ initialView = 'dashboard' }: AppProps) {
                     }
                     placeholder="airdodge, fair, ledge..."
                   />
-                </label>
+                </FilterField>
               </div>
-            </article>
+            </SectionCard>
 
-            <article className="ledger-panel notebook-card notebook-card--full">
-              <div className="panel-heading">
-                <div>
-                  <p className="section-kicker">Results</p>
-                  <h3>{filteredEntries.length} matching entries</h3>
-                </div>
-              </div>
+            <SectionCard className="px-4 py-5 sm:px-6 sm:py-6">
+              <SectionHeading
+                eyebrow="Results"
+                title={<h3 className="text-[1.45rem] leading-tight text-ink">{filteredEntries.length} matching entries</h3>}
+              />
 
-              {filteredEntries.length > 0 ? (
-                <ul className="logbook-list">
-                  {filteredEntries.map((entry) => (
-                    <li key={entry.id} className="logbook-row">
-                      <div className="logbook-row__margin">
-                        <span>{formatDate(entry.date)}</span>
-                        {entry.stage && <span>{entry.stage}</span>}
-                      </div>
-                      <div className="logbook-row__body">
-                        <button
-                          type="button"
-                          className="inline-link logbook-row__title"
-                          onClick={() => openMatchup(entry.opponentCharacter)}
-                        >
-                          {entry.opponentCharacter}
-                        </button>
-                        <p>{entry.deathCauseText ?? 'No death cause logged'}</p>
-                        <div className="entry-meta">
-                          {entry.deathCauseCategory && <span>{entry.deathCauseCategory}</span>}
-                          {entry.situationTags.length > 0 && (
-                            <span>{entry.situationTags.join(', ')}</span>
-                          )}
+              <div className="mt-5">
+                {filteredEntries.length > 0 ? (
+                  <ul className="divide-y divide-line/70">
+                    {filteredEntries.map((entry) => (
+                      <li key={entry.id} className="grid gap-3 py-4 sm:grid-cols-[124px_minmax(0,1fr)]">
+                        <div className="space-y-1 text-sm text-ink-faint">
+                          <p>{formatDate(entry.date)}</p>
+                          {entry.stage && <p>{entry.stage}</p>}
                         </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <NotebookEmptyState
-                  title="No entries match these filters"
-                  body="Broaden the date range or clear a field to pull more notebook rows back into view."
-                />
-              )}
-            </article>
+                        <div className="space-y-2">
+                          <button
+                            type="button"
+                            className="text-left text-base font-semibold text-ink transition hover:text-accent"
+                            onClick={() => openMatchup(entry.opponentCharacter)}
+                          >
+                            {entry.opponentCharacter}
+                          </button>
+                          <p className="text-sm leading-6 text-ink-soft">{entry.deathCauseText ?? 'No death cause logged'}</p>
+                          <div className="flex flex-wrap gap-2 text-[12px] text-ink-faint">
+                            {entry.deathCauseCategory && <span>{entry.deathCauseCategory}</span>}
+                            {entry.situationTags.length > 0 && <span>{entry.situationTags.join(', ')}</span>}
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <EmptyState
+                    body="Broaden the date range or clear a filter to bring more notes back into view."
+                    title="No entries match these filters"
+                  />
+                )}
+              </div>
+            </SectionCard>
           </section>
         )}
 
         {activeView === 'drills' && (
-          <section className="drill-view">
-            <article className="notebook-card notebook-card--accent">
-              <div className="panel-heading">
-                <div>
-                  <p className="section-kicker">Study board</p>
-                  <h2>Drill Library</h2>
-                </div>
-                <p className="panel-heading__note">Pin drills you want ready before the next session.</p>
-              </div>
-            </article>
+          <section className="flex flex-col gap-5">
+            <SectionCard className="surface-muted px-4 py-5 sm:px-6 sm:py-6">
+              <SectionHeading
+                eyebrow="Drills"
+                title={<h2 className="text-[1.9rem] leading-tight text-ink">Practice library</h2>}
+                description="Pin the reps you want ready before the next session starts."
+              />
+            </SectionCard>
 
             {pinnedDrillCards.length > 0 && (
-              <article className="notebook-card">
-                <div className="panel-heading">
-                  <div>
-                    <p className="section-kicker">Pinned</p>
-                    <h3>Ready for next session</h3>
-                  </div>
-                </div>
-
-                <ul className="drill-list">
+              <SectionCard className="px-4 py-5 sm:px-6 sm:py-6">
+                <SectionHeading
+                  eyebrow="Saved drills"
+                  title={<h3 className="text-[1.45rem] leading-tight text-ink">Ready for next session</h3>}
+                />
+                <div className="mt-5 grid gap-4 lg:grid-cols-2">
                   {pinnedDrillCards.map((drill) => (
-                    <li key={drill.title} className="drill-item pinned">
-                      <div>
-                        <h4>{drill.title}</h4>
-                        <p>{drill.description}</p>
-                        <p className="drill-meta">
-                          Categories: {drill.categories.join(', ') || 'n/a'} | Tags:{' '}
-                          {drill.tags.join(', ') || 'n/a'}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        className="cover-button cover-button--secondary"
-                        onClick={() => onToggleDrillPin(drill.title)}
-                      >
-                        Unpin
-                      </button>
-                    </li>
+                    <DrillItem
+                      key={drill.title}
+                      drill={drill}
+                      pinned
+                      onToggle={() => onToggleDrillPin(drill.title)}
+                    />
                   ))}
-                </ul>
-              </article>
+                </div>
+              </SectionCard>
             )}
 
-            <article className="notebook-card">
-              <div className="panel-heading">
-                <div>
-                  <p className="section-kicker">Library</p>
-                  <h3>All drills</h3>
-                </div>
-              </div>
-
-              <ul className="drill-list">
+            <SectionCard className="px-4 py-5 sm:px-6 sm:py-6">
+              <SectionHeading
+                eyebrow="Library"
+                title={<h3 className="text-[1.45rem] leading-tight text-ink">All drills</h3>}
+              />
+              <div className="mt-5 grid gap-4 lg:grid-cols-2">
                 {rankedDrills.map((drill) => {
                   const isPinned = pinnedDrills.includes(drill.title)
-
                   return (
-                    <li
+                    <DrillItem
                       key={drill.title}
-                      className={isPinned ? 'drill-item pinned' : 'drill-item'}
-                    >
-                      <div>
-                        <h4>{drill.title}</h4>
-                        <p>{drill.description}</p>
-                        <p className="drill-meta">
-                          Categories: {drill.categories.join(', ') || 'n/a'} | Tags:{' '}
-                          {drill.tags.join(', ') || 'n/a'}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        className={isPinned ? 'cover-button cover-button--secondary' : 'cover-button'}
-                        onClick={() => onToggleDrillPin(drill.title)}
-                      >
-                        {isPinned ? 'Unpin' : 'Pin'}
-                      </button>
-                    </li>
+                      drill={drill}
+                      pinned={isPinned}
+                      onToggle={() => onToggleDrillPin(drill.title)}
+                    />
                   )
                 })}
-              </ul>
-            </article>
+              </div>
+            </SectionCard>
           </section>
         )}
       </main>
 
-      <NotebookNavigation
+      <AppNav
         activeView={activeView}
         ariaLabel="Mobile navigation"
-        className="view-nav view-nav--mobile"
         mobile
         onSelect={setActiveView}
       />
@@ -1439,39 +1180,36 @@ function App({ initialView = 'dashboard' }: AppProps) {
           <option key={character} value={character} />
         ))}
       </datalist>
-
       <datalist id="death-cause-history">
-        {deathCauseHistory.map((item) => (
-          <option key={item} value={item} />
+        {deathCauseHistory.map((deathCause) => (
+          <option key={deathCause} value={deathCause} />
         ))}
       </datalist>
-
       <datalist id="stage-options">
-        {stageOptions.map((item) => (
-          <option key={item} value={item} />
+        {stageOptions.map((stage) => (
+          <option key={stage} value={stage} />
         ))}
       </datalist>
     </div>
   )
 }
 
-interface NotebookNavigationProps {
+interface AppNavProps {
   activeView: View
   ariaLabel: string
-  className: string
   mobile?: boolean
   onSelect: (view: View) => void
 }
 
-function NotebookNavigation({
-  activeView,
-  ariaLabel,
-  className,
-  mobile,
-  onSelect,
-}: NotebookNavigationProps) {
+function AppNav({ activeView, ariaLabel, mobile, onSelect }: AppNavProps) {
   return (
-    <nav className={className} aria-label={ariaLabel}>
+    <nav
+      className={mobile
+        ? 'fixed left-3 right-3 z-30 flex items-center gap-1 rounded-[1.25rem] border border-black/10 bg-[#241d18]/95 p-1 shadow-float backdrop-blur md:hidden'
+        : 'hidden items-center gap-1 rounded-full border border-line/70 bg-paper-strong/90 p-1 shadow-panel lg:inline-flex'}
+      aria-label={ariaLabel}
+      style={mobile ? { bottom: 'max(env(safe-area-inset-bottom), 0.75rem)' } : undefined}
+    >
       {VIEW_ITEMS.map((item) => {
         const active = item.view === activeView
 
@@ -1479,22 +1217,20 @@ function NotebookNavigation({
           <button
             key={item.view}
             type="button"
-            className={active ? 'nav-button active' : 'nav-button'}
+            className={joinClassNames(
+              'group flex min-w-0 items-center justify-center rounded-full font-medium transition',
+              mobile
+                ? 'flex-1 px-1.5 py-2.5 text-center text-[11px] leading-none text-paper-soft/72'
+                : 'px-4 py-2 text-sm text-ink-soft',
+              active &&
+                (mobile
+                  ? 'bg-paper-strong text-ink shadow-[0_6px_14px_rgba(0,0,0,0.18)]'
+                  : 'bg-paper text-ink shadow-[0_2px_8px_rgba(40,27,20,0.08)]'),
+            )}
             aria-current={active ? 'page' : undefined}
             onClick={() => onSelect(item.view)}
           >
-            {mobile ? (
-              <>
-                <span className="nav-button__title">{item.title}</span>
-                <span className="nav-button__detail">{item.step}</span>
-              </>
-            ) : (
-              <>
-                <span className="nav-button__step">{item.step}</span>
-                <span className="nav-button__title">{item.title}</span>
-                <span className="nav-button__detail">{item.detail}</span>
-              </>
-            )}
+            <span className="nav-button__title whitespace-nowrap">{item.title}</span>
           </button>
         )
       })}
@@ -1502,18 +1238,543 @@ function NotebookNavigation({
   )
 }
 
-interface NotebookEmptyStateProps {
-  body: string
-  title: string
+interface CurrentFocusCardProps {
+  currentFocusDrill: Drill
+  currentFocusIssue: string
+  currentFocusRule: string
+  focusOpponent?: string
+  onOpenMatchup: (opponentCharacter: string) => void
 }
 
-function NotebookEmptyState({ body, title }: NotebookEmptyStateProps) {
+function CurrentFocusCard({
+  currentFocusDrill,
+  currentFocusIssue,
+  currentFocusRule,
+  focusOpponent,
+  onOpenMatchup,
+}: CurrentFocusCardProps) {
   return (
-    <div className="empty-note">
-      <strong>{title}</strong>
-      <p>{body}</p>
+    <SectionCard className="surface-muted px-4 py-5 sm:px-6 sm:py-6" data-section="current-focus">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-3">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-ink-faint">
+            Current Focus
+          </p>
+          <h2 className="max-w-2xl text-[1.85rem] leading-[1.02] text-balance text-ink sm:text-[2.2rem]">
+            One thing to carry into the next set.
+          </h2>
+          <p className="max-w-2xl text-sm leading-6 text-ink-soft sm:text-[0.95rem]">
+            The dashboard turns your recent notes into a single issue, a single rule, and one drill to run next.
+          </p>
+        </div>
+
+        {focusOpponent && (
+          <button
+            type="button"
+            className={SECONDARY_BUTTON_STYLES}
+            onClick={() => onOpenMatchup(focusOpponent)}
+          >
+            Open {focusOpponent}
+          </button>
+        )}
+      </div>
+
+      <div className="mt-6 grid gap-4 lg:grid-cols-3">
+        <FocusPanel
+          label="Most recurring issue"
+          value={currentFocusIssue}
+        />
+        <FocusPanel label="Next rule" value={currentFocusRule} />
+        <FocusPanel
+          label="Suggested drill"
+          value={currentFocusDrill.title}
+          detail={currentFocusDrill.description}
+        />
+      </div>
+    </SectionCard>
+  )
+}
+
+function StatRow({ stats }: { stats: SummaryStat[] }) {
+  return (
+    <SectionCard className="overflow-hidden p-0" data-section="summary-stats">
+      <dl className="grid divide-y divide-line/70 sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x lg:divide-line/70">
+        {stats.map((stat) => (
+          <div key={stat.label} className="flex min-h-28 flex-col justify-between gap-3 px-4 py-4 sm:px-5">
+            <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
+              {stat.label}
+            </dt>
+            <dd className="text-[1.35rem] font-semibold leading-tight text-ink sm:text-[1.55rem]">
+              {stat.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </SectionCard>
+  )
+}
+
+interface DashboardHeaderProps {
+  activeView: View
+  onOpenEntry: () => void
+  onOpenLog: () => void
+  onSelectView: (view: View) => void
+  shellPurpose: string
+}
+
+function DashboardHeader({
+  activeView,
+  onOpenEntry,
+  onOpenLog,
+  onSelectView,
+  shellPurpose,
+}: DashboardHeaderProps) {
+  return (
+    <SectionCard
+      className="surface-grid px-4 py-4 sm:px-6 sm:py-5"
+      data-section={activeView === 'dashboard' ? 'dashboard-header' : 'page-header'}
+    >
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-accent/20 bg-accent-soft/55 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-accent">
+              Smash Log
+            </span>
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-ink-faint">
+              Smash Matchup Lab
+            </p>
+          </div>
+          <div className="space-y-2">
+            <h1 className="max-w-3xl font-display text-[2rem] leading-[0.92] text-ink sm:text-[2.35rem] lg:text-[2.8rem]">
+              {activeView === 'dashboard'
+                ? 'Find the habit. Write the rule. Run the drill.'
+                : VIEW_ITEMS.find((item) => item.view === activeView)?.title}
+            </h1>
+            <p className="max-w-2xl text-balance text-sm leading-6 text-ink-soft sm:text-[0.95rem]">
+              {shellPurpose}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 xl:items-end">
+          <AppNav
+            activeView={activeView}
+            ariaLabel="Notebook navigation"
+            mobile={false}
+            onSelect={onSelectView}
+          />
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className={PRIMARY_BUTTON_STYLES} onClick={onOpenEntry}>
+              Log Set
+            </button>
+            <button type="button" className={SECONDARY_BUTTON_STYLES} onClick={onOpenLog}>
+              View Full Log
+            </button>
+          </div>
+        </div>
+      </div>
+    </SectionCard>
+  )
+}
+
+interface DashboardPageProps {
+  currentFocusDrill: Drill
+  currentFocusIssue: string
+  currentFocusRule: string
+  drillPreview: Drill[]
+  focusOpponent?: string
+  onOpenDrills: () => void
+  onOpenLog: () => void
+  onOpenMatchup: (opponentCharacter: string) => void
+  onToggleDrillPin: (title: string) => void
+  pinnedCount: number
+  pinnedTitles: string[]
+  pressurePoints: Array<{ issue: string; negativeCount: number; opponentCharacter: string }>
+  recentEntries: MatchEntry[]
+  summaryStats: SummaryStat[]
+}
+
+function DashboardPage({
+  currentFocusDrill,
+  currentFocusIssue,
+  currentFocusRule,
+  drillPreview,
+  focusOpponent,
+  onOpenDrills,
+  onOpenLog,
+  onOpenMatchup,
+  onToggleDrillPin,
+  pinnedCount,
+  pinnedTitles,
+  pressurePoints,
+  recentEntries,
+  summaryStats,
+}: DashboardPageProps) {
+  return (
+    <section className="flex flex-col gap-5">
+      <CurrentFocusCard
+        currentFocusDrill={currentFocusDrill}
+        currentFocusIssue={currentFocusIssue}
+        currentFocusRule={currentFocusRule}
+        focusOpponent={focusOpponent}
+        onOpenMatchup={onOpenMatchup}
+      />
+
+      <StatRow stats={summaryStats} />
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.85fr)]">
+        <RecentNotesPanel
+          entries={recentEntries}
+          onOpenLog={onOpenLog}
+          onOpenMatchup={onOpenMatchup}
+        />
+        <PressurePointsPanel items={pressurePoints} onOpenMatchup={onOpenMatchup} />
+      </div>
+
+      <DrillLibraryPreview
+        drills={drillPreview}
+        pinnedCount={pinnedCount}
+        pinnedTitles={pinnedTitles}
+        onOpenDrills={onOpenDrills}
+        onToggleDrillPin={onToggleDrillPin}
+      />
+    </section>
+  )
+}
+
+interface RecentNotesPanelProps {
+  entries: MatchEntry[]
+  onOpenLog: () => void
+  onOpenMatchup: (opponentCharacter: string) => void
+}
+
+function RecentNotesPanel({ entries, onOpenLog, onOpenMatchup }: RecentNotesPanelProps) {
+  return (
+    <SectionCard className="px-4 py-5 sm:px-6 sm:py-6" data-section="recent-notes">
+      <SectionHeading
+        eyebrow="Recent notes"
+        title={<h3 className="text-[1.55rem] leading-tight text-ink">Latest set notes</h3>}
+        description="Review the latest notes first. Each row gives you the matchup, the date, and the takeaway worth carrying forward."
+        action={
+          <button type="button" className={TEXT_BUTTON_STYLES} onClick={onOpenLog}>
+            Open full log
+          </button>
+        }
+      />
+
+      <div className="mt-5">
+        {entries.length > 0 ? (
+          <ul className="divide-y divide-line/70">
+            {entries.map((entry) => (
+              <li key={entry.id} className="py-4 first:pt-0 last:pb-0">
+                <button
+                  type="button"
+                  className="grid w-full gap-1 text-left"
+                  onClick={() => onOpenMatchup(entry.opponentCharacter)}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <span className="text-base font-semibold text-ink">{entry.opponentCharacter}</span>
+                    <span className="text-sm text-ink-faint">{formatDate(entry.date)}</span>
+                  </div>
+                  <p className="text-sm leading-6 text-ink-soft">
+                    {entry.oneRuleNextTime ?? entry.deathCauseText ?? 'No takeaway logged'}
+                  </p>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyState
+            body="Log your first set to start finding repeat habits."
+            title="No sets logged yet"
+          />
+        )}
+      </div>
+    </SectionCard>
+  )
+}
+
+function PressurePointsPanel({
+  items,
+  onOpenMatchup,
+}: {
+  items: Array<{ issue: string; negativeCount: number; opponentCharacter: string }>
+  onOpenMatchup: (opponentCharacter: string) => void
+}) {
+  return (
+    <SectionCard className="px-4 py-5 sm:px-6 sm:py-6" data-section="pressure-points">
+      <SectionHeading
+        eyebrow="Pressure points"
+        title={<h3 className="text-[1.55rem] leading-tight text-ink">Where stocks keep slipping away</h3>}
+        description="This is the diagnostic view. The opponents and habits here are where your practice time should go first."
+      />
+
+      <div className="mt-5">
+        {items.length > 0 ? (
+          <ol className="space-y-3">
+            {items.map((item, index) => (
+              <li key={item.opponentCharacter}>
+                <button
+                  type="button"
+                  className="w-full rounded-[1rem] border border-line/70 bg-paper-strong/75 px-4 py-4 text-left transition hover:border-line-strong"
+                  onClick={() => onOpenMatchup(item.opponentCharacter)}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+                        <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">{index + 1}</span>
+                        <span>{item.opponentCharacter}</span>
+                      </div>
+                      <p className="text-sm leading-6 text-ink-soft">{item.issue}</p>
+                    </div>
+                    <span className="rounded-full bg-accent-soft/55 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
+                      {item.negativeCount} notes
+                    </span>
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <EmptyState
+            body="Patterns will appear after a few entries."
+            title="No recurring matchup issues yet"
+          />
+        )}
+      </div>
+    </SectionCard>
+  )
+}
+
+interface DrillLibraryPreviewProps {
+  drills: Drill[]
+  onOpenDrills: () => void
+  onToggleDrillPin: (title: string) => void
+  pinnedCount: number
+  pinnedTitles: string[]
+}
+
+function DrillLibraryPreview({
+  drills,
+  onOpenDrills,
+  onToggleDrillPin,
+  pinnedCount,
+  pinnedTitles,
+}: DrillLibraryPreviewProps) {
+  return (
+    <SectionCard className="px-4 py-5 sm:px-6 sm:py-6" data-section="drill-preview">
+      <SectionHeading
+        eyebrow="Drills"
+        title={<h3 className="text-[1.55rem] leading-tight text-ink">Practice layer</h3>}
+        description={
+          pinnedCount > 0
+            ? `${pinnedCount} drill${pinnedCount === 1 ? '' : 's'} pinned for the next session.`
+            : 'Pin the reps you want ready before the next session starts.'
+        }
+        action={
+          <button type="button" className={TEXT_BUTTON_STYLES} onClick={onOpenDrills}>
+            Open drills
+          </button>
+        }
+      />
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-3">
+        {drills.map((drill) => (
+          <DrillItem
+            key={drill.title}
+            drill={drill}
+            pinned={pinnedTitles.includes(drill.title)}
+            onToggle={() => onToggleDrillPin(drill.title)}
+          />
+        ))}
+      </div>
+    </SectionCard>
+  )
+}
+
+function DrillItem({
+  drill,
+  pinned,
+  onToggle,
+}: {
+  drill: Drill
+  pinned: boolean
+  onToggle: () => void
+}) {
+  return (
+    <article className="flex h-full flex-col justify-between rounded-[1rem] border border-line/70 bg-paper-strong/78 p-4">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h4 className="text-[1.1rem] leading-tight text-ink">{drill.title}</h4>
+          {pinned && (
+            <span className="rounded-full bg-support/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-support">
+              Pinned
+            </span>
+          )}
+        </div>
+        <p className="text-sm leading-6 text-ink-soft">{drill.description}</p>
+        <p className="text-[12px] leading-5 text-ink-faint">
+          Categories: {drill.categories.join(', ') || 'n/a'} · Tags: {drill.tags.join(', ') || 'n/a'}
+        </p>
+      </div>
+      <div className="mt-4">
+        <button
+          type="button"
+          className={pinned ? SECONDARY_BUTTON_STYLES : PRIMARY_BUTTON_STYLES}
+          onClick={onToggle}
+        >
+          {pinned ? 'Unpin' : 'Pin'}
+        </button>
+      </div>
+    </article>
+  )
+}
+
+function SectionHeading({
+  action,
+  description,
+  eyebrow,
+  note,
+  title,
+}: {
+  action?: ReactNode
+  description?: string
+  eyebrow: string
+  note?: string
+  title: ReactNode
+}) {
+  return (
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div className="space-y-2">
+        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-faint">
+          {eyebrow}
+        </p>
+        {title}
+        {description && (
+          <p className="max-w-2xl text-sm leading-6 text-ink-soft">{description}</p>
+        )}
+      </div>
+      {(action || note) && (
+        <div className="flex items-center gap-3 lg:pt-1">
+          {note && <p className="text-sm text-ink-faint">{note}</p>}
+          {action}
+        </div>
+      )}
     </div>
   )
+}
+
+function FormBlock({
+  children,
+  description,
+  title,
+}: {
+  children: ReactNode
+  description: string
+  title: string
+}) {
+  return (
+    <section className="space-y-4 border-t border-line/70 pt-5 first:border-t-0 first:pt-0">
+      <div className="space-y-1.5">
+        <h3 className="text-[1.2rem] leading-tight text-ink">{title}</h3>
+        <p className="text-sm leading-6 text-ink-soft">{description}</p>
+      </div>
+      <div className="space-y-4">{children}</div>
+    </section>
+  )
+}
+
+function FieldShell({
+  children,
+  label,
+  shortcut,
+}: {
+  children: ReactNode
+  label: string
+  shortcut?: string
+}) {
+  return (
+    <label className="block text-sm font-medium text-ink-soft">
+      <span className="flex items-center gap-2">
+        {shortcut && (
+          <span className="rounded-full bg-paper-muted px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
+            {shortcut}
+          </span>
+        )}
+        <span>{label}</span>
+      </span>
+      {children}
+    </label>
+  )
+}
+
+function FilterField({ children, label }: { children: ReactNode; label: string }) {
+  return (
+    <label className="block text-sm font-medium text-ink-soft">
+      {label}
+      {children}
+    </label>
+  )
+}
+
+function FocusPanel({
+  detail,
+  label,
+  value,
+}: {
+  detail?: string
+  label: string
+  value: string
+}) {
+  return (
+    <div className="rounded-[1.1rem] border border-line/70 bg-paper-strong/82 p-4">
+      <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
+        {label}
+      </p>
+      <p className="mt-2 text-[1.1rem] font-semibold leading-tight text-ink">{value}</p>
+      {detail && <p className="mt-2 text-sm leading-6 text-ink-soft">{detail}</p>}
+    </div>
+  )
+}
+
+function FocusLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="space-y-1 rounded-[1rem] border border-line/70 bg-paper-soft px-4 py-3">
+      <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">{label}</p>
+      <p className="text-sm font-semibold leading-6 text-ink">{value}</p>
+    </div>
+  )
+}
+
+interface SectionCardProps extends ComponentPropsWithoutRef<'section'> {
+  children: ReactNode
+}
+
+function SectionCard({ children, className, ...props }: SectionCardProps) {
+  return (
+    <section
+      className={joinClassNames(
+        'rounded-panel border border-line/75 surface-paper shadow-panel',
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </section>
+  )
+}
+
+function EmptyState({ body, title }: { body: string; title: string }) {
+  return (
+    <div className="rounded-[1.1rem] border border-dashed border-line/80 bg-paper-soft/65 px-4 py-5">
+      <p className="text-base font-semibold text-ink">{title}</p>
+      <p className="mt-2 text-sm leading-6 text-ink-soft">{body}</p>
+    </div>
+  )
+}
+
+function joinClassNames(...values: Array<string | false | null | undefined>) {
+  return values.filter(Boolean).join(' ')
 }
 
 function focusSoon(
