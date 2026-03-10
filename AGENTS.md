@@ -645,12 +645,13 @@ If you cannot confirm all four, say what is missing.
 
 ## Repo Journal Policy
 
-Make a new file in this repo called `journal.md`.
-
-`Fix` is a trigger word. Every time Sean asks you to fix something, you must:
-
-1. Write down what you just tried previously.
-2. Write down what Sean is asking you to do.
-3. Write down what the error is after you have tried.
-
-Always read `journal.md` first. It is the memory of prior attempts. Do not retry logged failures. Do not ignore logged constraints. Do not start fresh unless the repo has materially changed and you explain why. Use the journal to avoid repetition, choose the next hypothesis, and append a concise entry after every meaningful attempt.
+- Keep a repo file named `journal.md`.
+- Always read `journal.md` first.
+- Treat `fix` as a trigger word.
+- When Sean asks you to fix something, log:
+  1. what you tried last
+  2. what Sean asked you to do
+  3. the error after you tried
+- Do not retry logged failures or ignore logged constraints.
+- Do not start fresh unless the repo materially changed and you explain why.
+- Append a concise journal entry after every meaningful attempt.
