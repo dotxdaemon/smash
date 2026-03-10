@@ -68,6 +68,9 @@ const SECONDARY_BUTTON_STYLES =
 const QUIET_BUTTON_STYLES =
   'inline-flex items-center justify-center rounded-[0.9rem] border border-line/60 bg-paper-soft/70 px-3.5 py-2 text-sm font-medium text-ink-soft transition hover:border-line-strong hover:bg-paper-strong hover:text-ink'
 
+const INLINE_LINK_STYLES =
+  'inline-flex items-center gap-1 text-[12px] font-medium text-accent underline decoration-line/55 decoration-1 underline-offset-4 transition hover:text-accent-strong hover:decoration-accent-strong'
+
 function App({ initialView = 'dashboard' }: AppProps) {
   const [initialState] = useState(loadState)
   const [entries, setEntries] = useState<MatchEntry[]>(initialState.entries)
@@ -1148,9 +1151,10 @@ function AppNav({ activeView, ariaLabel, mobile, onSelect }: AppNavProps) {
   return (
     <nav
       className={mobile
-        ? 'fixed left-3 right-3 z-30 flex items-center gap-1 rounded-[1.05rem] border border-line/60 bg-paper-strong/90 p-1 shadow-[0_12px_30px_rgba(40,27,20,0.14)] backdrop-blur md:hidden'
-        : 'hidden items-center gap-0.5 rounded-[0.95rem] bg-paper-soft/80 p-0.5 lg:inline-flex'}
+        ? 'fixed left-4 right-4 z-30 flex items-center gap-0.5 rounded-[0.88rem] border border-line/45 bg-paper/88 px-1 py-1 shadow-[0_8px_18px_rgba(40,27,20,0.08)] backdrop-blur-[10px] md:hidden'
+        : 'hidden items-center gap-0.5 rounded-[0.85rem] bg-paper-soft/70 p-0.5 lg:inline-flex'}
       aria-label={ariaLabel}
+      data-nav-tone={mobile ? 'integrated' : undefined}
       style={mobile ? { bottom: 'max(env(safe-area-inset-bottom), 0.75rem)' } : undefined}
     >
       {VIEW_ITEMS.map((item) => {
@@ -1161,14 +1165,14 @@ function AppNav({ activeView, ariaLabel, mobile, onSelect }: AppNavProps) {
             key={item.view}
             type="button"
             className={joinClassNames(
-              'group flex min-w-0 items-center justify-center rounded-full font-medium transition',
+              'group flex min-w-0 items-center justify-center font-medium transition',
               mobile
-                ? 'flex-1 px-1.5 py-2.5 text-center text-[11px] leading-none text-ink-soft/70'
-                : 'px-3.5 py-1.5 text-[13px] text-ink-soft',
+                ? 'flex-1 rounded-[0.72rem] px-1 py-2 text-center text-[10.5px] leading-none text-ink-faint'
+                : 'rounded-[0.72rem] px-3 py-1.5 text-[13px] text-ink-soft',
               active &&
                 (mobile
-                  ? 'bg-accent-soft/65 text-accent shadow-[0_1px_0_rgba(151,69,34,0.12)]'
-                  : 'bg-paper-strong text-ink shadow-[0_1px_0_rgba(40,27,20,0.08)]'),
+                  ? 'bg-paper-strong/82 text-accent ring-1 ring-line/35'
+                  : 'bg-paper-strong/85 text-ink ring-1 ring-line/30'),
             )}
             aria-current={active ? 'page' : undefined}
             onClick={() => onSelect(item.view)}
@@ -1202,12 +1206,12 @@ function TrainingConsole({
 }: CurrentFocusCardProps) {
   return (
     <section
-      className="mx-auto w-full max-w-4xl rounded-[1.1rem] bg-paper-strong/84 px-5 py-5 shadow-[0_10px_28px_rgba(40,27,20,0.08)] ring-1 ring-line/40 sm:px-7 sm:py-7"
+      className="mx-auto w-full max-w-4xl rounded-[0.98rem] bg-paper-strong/84 px-5 py-5 shadow-[0_8px_22px_rgba(40,27,20,0.06)] ring-1 ring-line/32 sm:px-7 sm:py-6"
       data-section="training-console"
       data-focus-layout="coaching"
     >
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(240px,0.8fr)] lg:items-start">
-        <div className="space-y-5" data-focus-item="issue">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.28fr)_minmax(220px,0.72fr)] lg:items-start">
+        <div className="space-y-4" data-focus-item="issue">
           <div className="space-y-2">
             <p className="font-mono text-[11px] uppercase tracking-[0.24em] text-accent">
               After the set
@@ -1216,25 +1220,25 @@ function TrainingConsole({
               Habit to stop
             </p>
           </div>
-          <h2 className="max-w-2xl text-[2.3rem] leading-[0.92] text-ink sm:text-[3rem]">
+          <h2 className="max-w-xl text-[2.45rem] leading-[0.9] text-ink sm:text-[3.05rem]">
             {currentFocusIssue}
           </h2>
         </div>
 
-        <div className="grid gap-4 border-t border-line/55 pt-4 lg:border-l lg:border-t-0 lg:pl-6">
+        <div className="space-y-5 border-t border-line/40 pt-5 lg:border-l lg:border-t-0 lg:pl-7 lg:pt-0">
           <div className="space-y-2" data-focus-item="rule">
             <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
               Rule to follow
             </p>
-            <p className="text-base font-semibold leading-7 text-ink">
+            <p className="text-[1.02rem] font-semibold leading-7 text-ink">
               {currentFocusRule}
             </p>
           </div>
-          <div className="space-y-2 border-t border-line/55 pt-4" data-focus-item="drill">
+          <div className="space-y-2" data-focus-item="drill">
             <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
               Drill to run
             </p>
-            <p className="text-base font-semibold leading-7 text-ink">
+            <p className="text-[1.02rem] font-semibold leading-7 text-ink">
               {currentFocusDrill.title}
             </p>
             <p className="text-sm leading-6 text-ink-soft">
@@ -1242,10 +1246,10 @@ function TrainingConsole({
             </p>
           </div>
           {focusOpponent && (
-            <div className="border-t border-line/55 pt-4">
+            <div className="pt-1">
               <button
                 type="button"
-                className={QUIET_BUTTON_STYLES}
+                className={INLINE_LINK_STYLES}
                 onClick={() => onOpenMatchup(focusOpponent)}
               >
                 Open {focusOpponent} notes
@@ -1255,29 +1259,31 @@ function TrainingConsole({
         </div>
       </div>
 
-      <section className="mt-6 border-t border-line/55 pt-4" data-section="recent-notes">
+      <section className="mt-6 border-t border-line/40 pt-4" data-section="recent-notes">
         <div className="flex items-center justify-between gap-3">
-          <div>
+          <div className="flex min-w-0 items-center gap-3">
             <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-faint">
               Recent notes
             </p>
-            <p className="mt-1 text-sm text-ink-soft">
-              Last few reminders worth keeping in view.
-            </p>
+            <button
+              type="button"
+              className={INLINE_LINK_STYLES}
+              data-log-link="inline"
+              onClick={onOpenLog}
+            >
+              Full log
+            </button>
           </div>
-          <button type="button" className={QUIET_BUTTON_STYLES} onClick={onOpenLog}>
-            Full log
-          </button>
         </div>
 
-        <div className="mt-4">
+        <div className="mt-3">
           {recentEntries.length > 0 ? (
             <ul className="divide-y divide-line/55">
               {recentEntries.map((entry) => (
                 <li key={entry.id} className="py-3 first:pt-0 last:pb-0">
                   <button
                     type="button"
-                    className="grid w-full gap-1 text-left"
+                    className="grid w-full gap-1.5 rounded-[0.75rem] px-1 py-2 text-left transition hover:bg-paper-soft/40"
                     onClick={() => onOpenMatchup(entry.opponentCharacter)}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1321,19 +1327,25 @@ function DashboardHeader({
   if (activeView === 'dashboard') {
     return (
       <section
-        className="flex items-center justify-between gap-4 pb-2"
+        className="flex items-end justify-between gap-4 pb-3"
         data-section="dashboard-topbar"
+        data-topbar-tone="notebook"
       >
         <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-accent">
-            Smash Log
+            Smash Matchup Lab
           </p>
-          <p className="mt-1 text-sm text-ink-soft">
+          <div className="mt-1.5 space-y-1">
+            <h1 className="font-display text-[1.6rem] leading-[0.92] text-ink sm:text-[1.85rem]">
+              Smash Log
+            </h1>
+            <p className="text-sm text-ink-soft">
             Log the set. Get the next step.
-          </p>
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <AppNav
             activeView={activeView}
             ariaLabel="Notebook navigation"

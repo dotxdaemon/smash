@@ -46,4 +46,10 @@
 - Result: The dashboard now has a materially different shape at a glance: top bar, one dominant training surface, and no extra overview regions.
 - Missed: The previous simplification removed sections but still kept the same broad header, big middle card, and lower support block silhouette, so it still read as the same dashboard.
 - Verification: `npm test`, `npm run lint`, `npm run typecheck`, and `npm run build` all passed after the console-style dashboard pass.
+- Request: Refine the current training-console UI and fix the stale Vercel deployment so the live app matches the current product direction.
+- Previous attempt: The training-console pass fixed the silhouette, but the nav and `Full log` control still used mismatched secondary styling, and Vercel was still serving the much older `masthead` build.
+- Attempt: Tightened the dashboard topbar, turned the mobile nav into a lighter integrated strip, and moved `Full log` into the recent-notes heading as an inline secondary path inside the existing training-console layout.
+- Result: The topbar keeps the same compact structure but feels more intentional, the main card reads more naturally, and the bottom nav now matches the lighter editorial surface model.
+- Missed: The previous console pass still left the bottom nav too dark and rounded, and it kept `Full log` as a parked utility button that interrupted the notes flow.
+- Verification: `npm test`, `npm run lint`, `npm run typecheck`, and `npm run build` all passed after the training-console refinement pass.
 
