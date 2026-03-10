@@ -1206,7 +1206,7 @@ function AppNav({ activeView, ariaLabel, mobile, onSelect }: AppNavProps) {
     <nav
       className={mobile
         ? 'fixed left-3 right-3 z-30 flex items-center gap-1 rounded-[1.25rem] border border-black/10 bg-[#241d18]/95 p-1 shadow-float backdrop-blur md:hidden'
-        : 'hidden items-center gap-1 rounded-full border border-line/70 bg-paper-strong/90 p-1 shadow-panel lg:inline-flex'}
+        : 'hidden items-center gap-0.5 rounded-[0.95rem] bg-paper-soft/80 p-0.5 lg:inline-flex'}
       aria-label={ariaLabel}
       style={mobile ? { bottom: 'max(env(safe-area-inset-bottom), 0.75rem)' } : undefined}
     >
@@ -1221,11 +1221,11 @@ function AppNav({ activeView, ariaLabel, mobile, onSelect }: AppNavProps) {
               'group flex min-w-0 items-center justify-center rounded-full font-medium transition',
               mobile
                 ? 'flex-1 px-1.5 py-2.5 text-center text-[11px] leading-none text-paper-soft/72'
-                : 'px-4 py-2 text-sm text-ink-soft',
+                : 'px-3.5 py-1.5 text-[13px] text-ink-soft',
               active &&
                 (mobile
                   ? 'bg-paper-strong text-ink shadow-[0_6px_14px_rgba(0,0,0,0.18)]'
-                  : 'bg-paper text-ink shadow-[0_2px_8px_rgba(40,27,20,0.08)]'),
+                  : 'bg-paper-strong text-ink shadow-[0_1px_0_rgba(40,27,20,0.08)]'),
             )}
             aria-current={active ? 'page' : undefined}
             onClick={() => onSelect(item.view)}
@@ -1254,63 +1254,84 @@ function CurrentFocusCard({
   onOpenMatchup,
 }: CurrentFocusCardProps) {
   return (
-    <SectionCard className="surface-muted px-4 py-5 sm:px-6 sm:py-6" data-section="current-focus">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-3">
-          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-ink-faint">
-            Current Focus
-          </p>
-          <h2 className="max-w-2xl text-[1.85rem] leading-[1.02] text-balance text-ink sm:text-[2.2rem]">
-            One thing to carry into the next set.
-          </h2>
-          <p className="max-w-2xl text-sm leading-6 text-ink-soft sm:text-[0.95rem]">
-            The dashboard turns your recent notes into a single issue, a single rule, and one drill to run next.
-          </p>
+    <section
+      className="rounded-[1rem] bg-paper-strong/80 px-4 py-5 shadow-[0_1px_0_rgba(40,27,20,0.08)] ring-1 ring-line/45 sm:px-6 sm:py-6"
+      data-section="current-focus"
+      data-focus-layout="coaching"
+    >
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] lg:items-start">
+        <div className="space-y-4" data-focus-item="issue">
+          <div className="space-y-2">
+            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-accent">
+              Current Focus
+            </p>
+            <p className="max-w-xl text-sm leading-6 text-ink-soft">
+              One coaching output for the next session: the habit to stop, the rule to test, and the drill to run.
+            </p>
+          </div>
+          <div className="space-y-3 border-l-2 border-accent/30 pl-4">
+            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
+              Biggest issue
+            </p>
+            <h2 className="max-w-2xl text-[1.75rem] leading-[1.02] text-ink sm:text-[2.1rem]">
+              {currentFocusIssue}
+            </h2>
+          </div>
         </div>
 
-        {focusOpponent && (
-          <button
-            type="button"
-            className={SECONDARY_BUTTON_STYLES}
-            onClick={() => onOpenMatchup(focusOpponent)}
-          >
-            Open {focusOpponent}
-          </button>
-        )}
+        <div className="grid gap-4 border-t border-line/55 pt-4 lg:border-l lg:border-t-0 lg:pl-5">
+          <div className="space-y-2" data-focus-item="rule">
+            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
+              Next rule
+            </p>
+            <p className="text-base font-semibold leading-7 text-ink">
+              {currentFocusRule}
+            </p>
+          </div>
+          <div className="space-y-2 border-t border-line/55 pt-4" data-focus-item="drill">
+            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
+              Suggested drill
+            </p>
+            <p className="text-base font-semibold leading-7 text-ink">
+              {currentFocusDrill.title}
+            </p>
+            <p className="text-sm leading-6 text-ink-soft">
+              {currentFocusDrill.description}
+            </p>
+          </div>
+          {focusOpponent && (
+            <div className="border-t border-line/55 pt-4">
+              <button
+                type="button"
+                className={TEXT_BUTTON_STYLES}
+                onClick={() => onOpenMatchup(focusOpponent)}
+              >
+                Open {focusOpponent}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-
-      <div className="mt-6 grid gap-4 lg:grid-cols-3">
-        <FocusPanel
-          label="Most recurring issue"
-          value={currentFocusIssue}
-        />
-        <FocusPanel label="Next rule" value={currentFocusRule} />
-        <FocusPanel
-          label="Suggested drill"
-          value={currentFocusDrill.title}
-          detail={currentFocusDrill.description}
-        />
-      </div>
-    </SectionCard>
+    </section>
   )
 }
 
 function StatRow({ stats }: { stats: SummaryStat[] }) {
   return (
-    <SectionCard className="overflow-hidden p-0" data-section="summary-stats">
-      <dl className="grid divide-y divide-line/70 sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x lg:divide-line/70">
+    <section className="border-y border-line/55 py-3" data-section="summary-stats">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-3 lg:grid-cols-4">
         {stats.map((stat) => (
-          <div key={stat.label} className="flex min-h-28 flex-col justify-between gap-3 px-4 py-4 sm:px-5">
+          <div key={stat.label} className="min-w-0 space-y-1.5">
             <dt className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
               {stat.label}
             </dt>
-            <dd className="text-[1.35rem] font-semibold leading-tight text-ink sm:text-[1.55rem]">
+            <dd className="text-base font-semibold leading-6 text-ink sm:text-[1.05rem]">
               {stat.value}
             </dd>
           </div>
         ))}
       </dl>
-    </SectionCard>
+    </section>
   )
 }
 
@@ -1330,50 +1351,54 @@ function DashboardHeader({
   shellPurpose,
 }: DashboardHeaderProps) {
   return (
-    <SectionCard
-      className="surface-grid px-4 py-4 sm:px-6 sm:py-5"
+    <section
+      className="border-b border-line/60 pb-4"
       data-section={activeView === 'dashboard' ? 'dashboard-header' : 'page-header'}
     >
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div className="space-y-3">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="space-y-2.5">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-accent/20 bg-accent-soft/55 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-accent">
+            <span className="rounded-[0.8rem] bg-accent-soft/70 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-accent">
               Smash Log
             </span>
             <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-ink-faint">
               Smash Matchup Lab
             </p>
           </div>
-          <div className="space-y-2">
-            <h1 className="max-w-3xl font-display text-[2rem] leading-[0.92] text-ink sm:text-[2.35rem] lg:text-[2.8rem]">
+          <div className="space-y-1.5">
+            <h1 className="max-w-3xl font-display text-[1.85rem] leading-[0.92] text-ink sm:text-[2.2rem] lg:text-[2.6rem]">
               {activeView === 'dashboard'
                 ? 'Find the habit. Write the rule. Run the drill.'
                 : VIEW_ITEMS.find((item) => item.view === activeView)?.title}
             </h1>
-            <p className="max-w-2xl text-balance text-sm leading-6 text-ink-soft sm:text-[0.95rem]">
+            <p className="max-w-xl text-sm leading-6 text-ink-soft sm:text-[0.95rem]">
               {shellPurpose}
             </p>
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 xl:items-end">
+        <div className="flex flex-col gap-3 lg:items-end">
           <AppNav
             activeView={activeView}
             ariaLabel="Notebook navigation"
             mobile={false}
             onSelect={onSelectView}
           />
-          <div className="flex flex-wrap gap-2">
-            <button type="button" className={PRIMARY_BUTTON_STYLES} onClick={onOpenEntry}>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-[0.95rem] bg-accent px-5 py-3 text-sm font-semibold text-paper-strong shadow-[0_10px_22px_rgba(151,69,34,0.22)] transition hover:bg-accent-strong"
+              onClick={onOpenEntry}
+            >
               Log Set
             </button>
-            <button type="button" className={SECONDARY_BUTTON_STYLES} onClick={onOpenLog}>
+            <button type="button" className={TEXT_BUTTON_STYLES} onClick={onOpenLog}>
               View Full Log
             </button>
           </div>
         </div>
       </div>
-    </SectionCard>
+    </section>
   )
 }
 
@@ -1411,7 +1436,7 @@ function DashboardPage({
   summaryStats,
 }: DashboardPageProps) {
   return (
-    <section className="flex flex-col gap-5">
+    <section className="flex flex-col gap-4 sm:gap-5">
       <CurrentFocusCard
         currentFocusDrill={currentFocusDrill}
         currentFocusIssue={currentFocusIssue}
@@ -1450,11 +1475,11 @@ interface RecentNotesPanelProps {
 
 function RecentNotesPanel({ entries, onOpenLog, onOpenMatchup }: RecentNotesPanelProps) {
   return (
-    <SectionCard className="px-4 py-5 sm:px-6 sm:py-6" data-section="recent-notes">
+    <DashboardSection className="px-4 py-5 sm:px-5 sm:py-5" data-section="recent-notes">
       <SectionHeading
         eyebrow="Recent notes"
-        title={<h3 className="text-[1.55rem] leading-tight text-ink">Latest set notes</h3>}
-        description="Review the latest notes first. Each row gives you the matchup, the date, and the takeaway worth carrying forward."
+        title={<h3 className="text-[1.35rem] leading-tight text-ink">Latest set notes</h3>}
+        description="Latest matchup, timestamp, and the one line worth carrying forward."
         action={
           <button type="button" className={TEXT_BUTTON_STYLES} onClick={onOpenLog}>
             Open full log
@@ -1490,7 +1515,7 @@ function RecentNotesPanel({ entries, onOpenLog, onOpenMatchup }: RecentNotesPane
           />
         )}
       </div>
-    </SectionCard>
+    </DashboardSection>
   )
 }
 
@@ -1502,21 +1527,21 @@ function PressurePointsPanel({
   onOpenMatchup: (opponentCharacter: string) => void
 }) {
   return (
-    <SectionCard className="px-4 py-5 sm:px-6 sm:py-6" data-section="pressure-points">
+    <DashboardSection className="px-4 py-5 sm:px-5 sm:py-5" data-section="pressure-points">
       <SectionHeading
         eyebrow="Pressure points"
-        title={<h3 className="text-[1.55rem] leading-tight text-ink">Where stocks keep slipping away</h3>}
-        description="This is the diagnostic view. The opponents and habits here are where your practice time should go first."
+        title={<h3 className="text-[1.35rem] leading-tight text-ink">Where stocks keep slipping away</h3>}
+        description="The matchups and habits that are costing the most negative notes right now."
       />
 
       <div className="mt-5">
         {items.length > 0 ? (
-          <ol className="space-y-3">
+          <ol className="divide-y divide-line/55">
             {items.map((item, index) => (
-              <li key={item.opponentCharacter}>
+              <li key={item.opponentCharacter} className="py-3 first:pt-0 last:pb-0">
                 <button
                   type="button"
-                  className="w-full rounded-[1rem] border border-line/70 bg-paper-strong/75 px-4 py-4 text-left transition hover:border-line-strong"
+                  className="grid w-full gap-2 text-left transition hover:text-accent"
                   onClick={() => onOpenMatchup(item.opponentCharacter)}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -1527,7 +1552,7 @@ function PressurePointsPanel({
                       </div>
                       <p className="text-sm leading-6 text-ink-soft">{item.issue}</p>
                     </div>
-                    <span className="rounded-full bg-accent-soft/55 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
                       {item.negativeCount} notes
                     </span>
                   </div>
@@ -1542,7 +1567,7 @@ function PressurePointsPanel({
           />
         )}
       </div>
-    </SectionCard>
+    </DashboardSection>
   )
 }
 
@@ -1562,10 +1587,10 @@ function DrillLibraryPreview({
   pinnedTitles,
 }: DrillLibraryPreviewProps) {
   return (
-    <SectionCard className="px-4 py-5 sm:px-6 sm:py-6" data-section="drill-preview">
+    <DashboardSection className="px-4 py-5 sm:px-5 sm:py-5" data-section="drill-preview">
       <SectionHeading
         eyebrow="Drills"
-        title={<h3 className="text-[1.55rem] leading-tight text-ink">Practice layer</h3>}
+        title={<h3 className="text-[1.35rem] leading-tight text-ink">Practice layer</h3>}
         description={
           pinnedCount > 0
             ? `${pinnedCount} drill${pinnedCount === 1 ? '' : 's'} pinned for the next session.`
@@ -1578,7 +1603,7 @@ function DrillLibraryPreview({
         }
       />
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-3">
+      <div className="mt-4 grid gap-3 lg:grid-cols-3">
         {drills.map((drill) => (
           <DrillItem
             key={drill.title}
@@ -1588,7 +1613,7 @@ function DrillLibraryPreview({
           />
         ))}
       </div>
-    </SectionCard>
+    </DashboardSection>
   )
 }
 
@@ -1602,12 +1627,12 @@ function DrillItem({
   onToggle: () => void
 }) {
   return (
-    <article className="flex h-full flex-col justify-between rounded-[1rem] border border-line/70 bg-paper-strong/78 p-4">
+    <article className="flex h-full flex-col justify-between rounded-[0.95rem] bg-paper px-4 py-4 ring-1 ring-line/35">
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <h4 className="text-[1.1rem] leading-tight text-ink">{drill.title}</h4>
           {pinned && (
-            <span className="rounded-full bg-support/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-support">
+            <span className="rounded-[0.8rem] bg-support/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-support">
               Pinned
             </span>
           )}
@@ -1627,6 +1652,24 @@ function DrillItem({
         </button>
       </div>
     </article>
+  )
+}
+
+function DashboardSection({
+  children,
+  className,
+  ...props
+}: SectionCardProps) {
+  return (
+    <section
+      className={joinClassNames(
+        'rounded-[0.95rem] bg-paper-strong/60',
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </section>
   )
 }
 
@@ -1717,26 +1760,6 @@ function FilterField({ children, label }: { children: ReactNode; label: string }
   )
 }
 
-function FocusPanel({
-  detail,
-  label,
-  value,
-}: {
-  detail?: string
-  label: string
-  value: string
-}) {
-  return (
-    <div className="rounded-[1.1rem] border border-line/70 bg-paper-strong/82 p-4">
-      <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-        {label}
-      </p>
-      <p className="mt-2 text-[1.1rem] font-semibold leading-tight text-ink">{value}</p>
-      {detail && <p className="mt-2 text-sm leading-6 text-ink-soft">{detail}</p>}
-    </div>
-  )
-}
-
 function FocusLine({ label, value }: { label: string; value: string }) {
   return (
     <div className="space-y-1 rounded-[1rem] border border-line/70 bg-paper-soft px-4 py-3">
@@ -1766,9 +1789,9 @@ function SectionCard({ children, className, ...props }: SectionCardProps) {
 
 function EmptyState({ body, title }: { body: string; title: string }) {
   return (
-    <div className="rounded-[1.1rem] border border-dashed border-line/80 bg-paper-soft/65 px-4 py-5">
+    <div className="border-l-2 border-line/70 pl-4">
       <p className="text-base font-semibold text-ink">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-ink-soft">{body}</p>
+      <p className="mt-1 text-sm leading-6 text-ink-soft">{body}</p>
     </div>
   )
 }

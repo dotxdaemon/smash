@@ -27,4 +27,11 @@
 - Error: The dashboard hierarchy is working, but the slim nav still lets labels wrap or clip, especially `Dashboard` and `Log Set`, so the navigation is not clean enough yet.
 - Result: The app now uses a Tailwind-based product shell with a compact dashboard header, a single current-focus anchor, a restrained stat row, lighter navigation, and reusable dashboard components.
 - Verification: `npm test`, `npm run lint`, `npm run typecheck`, and `npm run build` all passed after the Tailwind redesign.
+- Request: Refine the current Tailwind dashboard without rewriting it, and explicitly record what was missed after the fix completes.
+- Previous attempt: The Tailwind redesign fixed the broad IA, but it still relied on too many full outlined sections, a soft Current Focus treatment, and a header that remained taller and quieter than the brief called for.
+- Attempt: Tightened the dashboard header, turned Current Focus into one unified coaching surface, flattened the stats row, and removed the heavy boxed treatment from the lower dashboard sections.
+- Error: `npm run lint` failed once because `FocusPanel` became unused after the Current Focus refactor, so the dead helper had to be removed.
+- Result: The dashboard now leads with a compact header, one clear coaching output, a quiet stats strip, flatter analysis sections, and less competing chrome.
+- Missed: The first Tailwind pass still treated the header, Current Focus, stats, and analysis panels as nearly the same kind of rounded slab, which flattened the hierarchy; it also left Current Focus split into equal subcards and kept the stats row too tall on mobile.
+- Verification: `npm test`, `npm run lint`, `npm run typecheck`, and `npm run build` all passed after the second-pass dashboard refinement.
 
