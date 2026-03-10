@@ -642,3 +642,15 @@ If you cannot confirm all four, say what is missing.
 - Do not speculatively add error handling, loading states, or fallbacks that were not requested.
 - Do not change the color scheme, spacing, or component structure unless that is the explicit task.
 - Do not upgrade dependencies unless asked.
+
+## Repo Journal Policy
+
+Make a new file in this repo called `journal.md`.
+
+`Fix` is a trigger word. Every time Sean asks you to fix something, you must:
+
+1. Write down what you just tried previously.
+2. Write down what Sean is asking you to do.
+3. Write down what the error is after you have tried.
+
+Always read `journal.md` first. It is the memory of prior attempts. Do not retry logged failures. Do not ignore logged constraints. Do not start fresh unless the repo has materially changed and you explain why. Use the journal to avoid repetition, choose the next hypothesis, and append a concise entry after every meaningful attempt.
