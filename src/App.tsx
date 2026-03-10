@@ -13,7 +13,6 @@ import {
 } from 'react'
 import { CHARACTERS } from './data/characters'
 import {
-  computeWorstMatchups,
   getTodayFocus,
   summarizeMatchup,
 } from './lib/analytics'
@@ -85,8 +84,6 @@ function App({ initialView = 'dashboard' }: AppProps) {
   const [formError, setFormError] = useState<string>('')
   const [saveStatus, setSaveStatus] = useState<string>('')
   const [tagCursor, setTagCursor] = useState(0)
-  const [currentTime] = useState(() => Date.now())
-
   const opponentInputRef = useRef<HTMLInputElement>(null)
   const tagPickerRef = useRef<HTMLDivElement>(null)
   const deathCauseRef = useRef<HTMLInputElement>(null)
@@ -142,19 +139,6 @@ function App({ initialView = 'dashboard' }: AppProps) {
 
     return summarizeMatchup(entries, todayFocus.opponentCharacter)
   }, [entries, todayFocus])
-
-  const lastThirtyDaysWorst = useMemo(() => {
-    const endDate = new Date(currentTime).toISOString()
-    const startDate = new Date(
-      currentTime - 30 * 24 * 60 * 60 * 1000,
-    ).toISOString()
-
-    return computeWorstMatchups(entries, {
-      startDate,
-      endDate,
-      limit: 3,
-    })
-  }, [currentTime, entries])
 
   const matchupEntries = useMemo(() => {
     if (!selectedOpponent) {
@@ -218,18 +202,6 @@ function App({ initialView = 'dashboard' }: AppProps) {
   const overallTopIssue = useMemo(
     () => rankDeathCauseCategories(entries, 1)[0]?.category,
     [entries],
-  )
-
-  const pressurePoints = useMemo(
-    () =>
-      lastThirtyDaysWorst.map((item) => {
-        const summary = summarizeMatchup(entries, item.opponentCharacter)
-        return {
-          ...item,
-          issue: summary.topDeathCauseCategory ?? 'Pattern still forming',
-        }
-      }),
-    [entries, lastThirtyDaysWorst],
   )
 
   const currentFocusIssue =
@@ -458,7 +430,6 @@ function App({ initialView = 'dashboard' }: AppProps) {
             focusOpponent={todayFocus?.opponentCharacter ?? latestInsight?.opponentCharacter}
             onOpenLog={() => setActiveView('log')}
             onOpenMatchup={openMatchup}
-            pressurePoints={pressurePoints}
             recentEntries={sortedEntries.slice(0, 3)}
           />
         )}
@@ -1215,43 +1186,42 @@ interface CurrentFocusCardProps {
   currentFocusIssue: string
   currentFocusRule: string
   focusOpponent?: string
+  recentEntries: MatchEntry[]
+  onOpenLog: () => void
   onOpenMatchup: (opponentCharacter: string) => void
 }
 
-function CurrentFocusCard({
+function TrainingConsole({
   currentFocusDrill,
   currentFocusIssue,
   currentFocusRule,
   focusOpponent,
+  recentEntries,
+  onOpenLog,
   onOpenMatchup,
 }: CurrentFocusCardProps) {
   return (
     <section
-      className="rounded-[1rem] bg-paper-strong/80 px-4 py-5 shadow-[0_1px_0_rgba(40,27,20,0.08)] ring-1 ring-line/45 sm:px-6 sm:py-6"
-      data-section="current-focus"
+      className="mx-auto w-full max-w-4xl rounded-[1.1rem] bg-paper-strong/84 px-5 py-5 shadow-[0_10px_28px_rgba(40,27,20,0.08)] ring-1 ring-line/40 sm:px-7 sm:py-7"
+      data-section="training-console"
       data-focus-layout="coaching"
     >
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] lg:items-start">
-        <div className="space-y-4" data-focus-item="issue">
-          <div className="space-y-1.5">
-            <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-accent">
-              Current Focus
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(240px,0.8fr)] lg:items-start">
+        <div className="space-y-5" data-focus-item="issue">
+          <div className="space-y-2">
+            <p className="font-mono text-[11px] uppercase tracking-[0.24em] text-accent">
+              After the set
             </p>
-            <p className="max-w-xl text-sm leading-6 text-ink-soft">
-              What to do after the last set.
-            </p>
-          </div>
-          <div className="space-y-2 border-l-2 border-accent/35 pl-4">
             <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
               Habit to stop
             </p>
-            <h2 className="max-w-2xl text-[2rem] leading-[0.98] text-ink sm:text-[2.35rem]">
-              {currentFocusIssue}
-            </h2>
           </div>
+          <h2 className="max-w-2xl text-[2.3rem] leading-[0.92] text-ink sm:text-[3rem]">
+            {currentFocusIssue}
+          </h2>
         </div>
 
-        <div className="grid gap-4 border-t border-line/55 pt-4 lg:border-l lg:border-t-0 lg:pl-5">
+        <div className="grid gap-4 border-t border-line/55 pt-4 lg:border-l lg:border-t-0 lg:pl-6">
           <div className="space-y-2" data-focus-item="rule">
             <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
               Rule to follow
@@ -1284,6 +1254,51 @@ function CurrentFocusCard({
           )}
         </div>
       </div>
+
+      <section className="mt-6 border-t border-line/55 pt-4" data-section="recent-notes">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-faint">
+              Recent notes
+            </p>
+            <p className="mt-1 text-sm text-ink-soft">
+              Last few reminders worth keeping in view.
+            </p>
+          </div>
+          <button type="button" className={QUIET_BUTTON_STYLES} onClick={onOpenLog}>
+            Full log
+          </button>
+        </div>
+
+        <div className="mt-4">
+          {recentEntries.length > 0 ? (
+            <ul className="divide-y divide-line/55">
+              {recentEntries.map((entry) => (
+                <li key={entry.id} className="py-3 first:pt-0 last:pb-0">
+                  <button
+                    type="button"
+                    className="grid w-full gap-1 text-left"
+                    onClick={() => onOpenMatchup(entry.opponentCharacter)}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <span className="text-sm font-semibold text-ink">{entry.opponentCharacter}</span>
+                      <span className="text-[12px] text-ink-faint">{formatDate(entry.date)}</span>
+                    </div>
+                    <p className="text-sm leading-6 text-ink-soft">
+                      {entry.oneRuleNextTime ?? entry.deathCauseText ?? 'No takeaway logged'}
+                    </p>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState
+              body="Log your first set to get a habit, a rule, and a drill."
+              title="No notes yet"
+            />
+          )}
+        </div>
+      </section>
     </section>
   )
 }
@@ -1303,10 +1318,44 @@ function DashboardHeader({
   onSelectView,
   shellPurpose,
 }: DashboardHeaderProps) {
+  if (activeView === 'dashboard') {
+    return (
+      <section
+        className="flex items-center justify-between gap-4 pb-2"
+        data-section="dashboard-topbar"
+      >
+        <div className="min-w-0">
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-accent">
+            Smash Log
+          </p>
+          <p className="mt-1 text-sm text-ink-soft">
+            Log the set. Get the next step.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <AppNav
+            activeView={activeView}
+            ariaLabel="Notebook navigation"
+            mobile={false}
+            onSelect={onSelectView}
+          />
+          <button
+            type="button"
+            className="inline-flex items-center justify-center rounded-[0.95rem] bg-accent px-5 py-3 text-sm font-semibold text-paper-strong shadow-[0_10px_22px_rgba(151,69,34,0.22)] transition hover:bg-accent-strong"
+            onClick={onOpenEntry}
+          >
+            Log Set
+          </button>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section
       className="border-b border-line/60 pb-4"
-      data-section={activeView === 'dashboard' ? 'dashboard-header' : 'page-header'}
+      data-section="page-header"
     >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-2.5">
@@ -1320,9 +1369,7 @@ function DashboardHeader({
           </div>
           <div className="space-y-1">
             <h1 className="max-w-3xl font-display text-[1.85rem] leading-[0.92] text-ink sm:text-[2.2rem] lg:text-[2.6rem]">
-              {activeView === 'dashboard'
-                ? 'Log the set. Get the next step.'
-                : VIEW_ITEMS.find((item) => item.view === activeView)?.title}
+              {VIEW_ITEMS.find((item) => item.view === activeView)?.title}
             </h1>
             <p className="max-w-lg text-sm leading-6 text-ink-soft sm:text-[0.95rem]">
               {shellPurpose}
@@ -1362,7 +1409,6 @@ interface DashboardPageProps {
   focusOpponent?: string
   onOpenLog: () => void
   onOpenMatchup: (opponentCharacter: string) => void
-  pressurePoints: Array<{ issue: string; negativeCount: number; opponentCharacter: string }>
   recentEntries: MatchEntry[]
 }
 
@@ -1373,117 +1419,20 @@ function DashboardPage({
   focusOpponent,
   onOpenLog,
   onOpenMatchup,
-  pressurePoints,
   recentEntries,
 }: DashboardPageProps) {
   return (
-    <section className="flex flex-col gap-4 sm:gap-5">
-      <CurrentFocusCard
+    <section className="flex flex-col">
+      <TrainingConsole
         currentFocusDrill={currentFocusDrill}
         currentFocusIssue={currentFocusIssue}
         currentFocusRule={currentFocusRule}
         focusOpponent={focusOpponent}
-        onOpenMatchup={onOpenMatchup}
-      />
-
-      <RecentNotesPanel
-        entries={recentEntries}
+        recentEntries={recentEntries}
         onOpenLog={onOpenLog}
         onOpenMatchup={onOpenMatchup}
       />
-
-      {pressurePoints.length > 0 && (
-        <MatchupPatternsPanel items={pressurePoints} onOpenMatchup={onOpenMatchup} />
-      )}
     </section>
-  )
-}
-
-interface RecentNotesPanelProps {
-  entries: MatchEntry[]
-  onOpenLog: () => void
-  onOpenMatchup: (opponentCharacter: string) => void
-}
-
-function RecentNotesPanel({ entries, onOpenLog, onOpenMatchup }: RecentNotesPanelProps) {
-  return (
-    <DashboardSection className="px-4 py-5 sm:px-5 sm:py-5" data-section="recent-notes">
-      <SectionHeading
-        eyebrow="Recent notes"
-        title={<h3 className="text-[1.3rem] leading-tight text-ink">Recent notes</h3>}
-        action={
-          <button type="button" className={QUIET_BUTTON_STYLES} onClick={onOpenLog}>
-            Full log
-          </button>
-        }
-      />
-
-      <div className="mt-5">
-        {entries.length > 0 ? (
-          <ul className="divide-y divide-line/70">
-            {entries.map((entry) => (
-              <li key={entry.id} className="py-4 first:pt-0 last:pb-0">
-                <button
-                  type="button"
-                  className="grid w-full gap-1 text-left"
-                  onClick={() => onOpenMatchup(entry.opponentCharacter)}
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <span className="text-base font-semibold text-ink">{entry.opponentCharacter}</span>
-                    <span className="text-sm text-ink-faint">{formatDate(entry.date)}</span>
-                  </div>
-                  <p className="text-sm leading-6 text-ink-soft">
-                    {entry.oneRuleNextTime ?? entry.deathCauseText ?? 'No takeaway logged'}
-                  </p>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <EmptyState
-            body="Log your first set to start finding repeat habits."
-            title="No sets logged yet"
-          />
-        )}
-      </div>
-    </DashboardSection>
-  )
-}
-
-function MatchupPatternsPanel({
-  items,
-  onOpenMatchup,
-}: {
-  items: Array<{ issue: string; negativeCount: number; opponentCharacter: string }>
-  onOpenMatchup: (opponentCharacter: string) => void
-}) {
-  return (
-    <DashboardSection className="px-4 py-5 sm:px-5 sm:py-5" data-section="matchup-patterns">
-      <SectionHeading
-        eyebrow="Recurring matchups"
-        title={<h3 className="text-[1.3rem] leading-tight text-ink">Where the same problem keeps showing up</h3>}
-      />
-
-      <ol className="mt-4 divide-y divide-line/55">
-        {items.slice(0, 3).map((item) => (
-          <li key={item.opponentCharacter} className="py-3 first:pt-0 last:pb-0">
-            <button
-              type="button"
-              className="grid w-full gap-1.5 text-left transition hover:text-accent"
-              onClick={() => onOpenMatchup(item.opponentCharacter)}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <span className="text-sm font-semibold text-ink">{item.opponentCharacter}</span>
-                <span className="text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-                  {item.negativeCount} notes
-                </span>
-              </div>
-              <p className="text-sm leading-6 text-ink-soft">{item.issue}</p>
-            </button>
-          </li>
-        ))}
-      </ol>
-    </DashboardSection>
   )
 }
 
@@ -1522,24 +1471,6 @@ function DrillItem({
         </button>
       </div>
     </article>
-  )
-}
-
-function DashboardSection({
-  children,
-  className,
-  ...props
-}: SectionCardProps) {
-  return (
-    <section
-      className={joinClassNames(
-        'rounded-[0.95rem] bg-paper-strong/60',
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </section>
   )
 }
 

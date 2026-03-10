@@ -39,4 +39,11 @@
 - Attempt: Removed the stats strip and dashboard drill preview, hid recurring matchup diagnostics unless there is real data, simplified the header copy, and lightened the mobile nav so the product reads as one focused loop.
 - Result: The dashboard now shows only the header, the current habit/rule/drill output, recent notes, and an optional recurring-matchup list when it adds value.
 - Verification: `npm test`, `npm run lint`, `npm run typecheck`, and `npm run build` all passed after the dashboard simplification pass.
+- Request: Change the dashboard silhouette materially so it stops reading as top block plus big middle card plus lower support card.
+- Previous attempt: The simplification cut sections, but it still kept the same overall stacked dashboard composition, so the screen still looked too similar at a glance.
+- Attempt: Deleted the stacked dashboard silhouette by replacing the old header-plus-cards composition with a compact top bar and one notebook-like training console that contains both the habit/rule/drill output and the recent-notes footer.
+- Error: `npm run typecheck` failed once because the non-dashboard header path still contained a `dashboard` branch that TypeScript had already ruled out.
+- Result: The dashboard now has a materially different shape at a glance: top bar, one dominant training surface, and no extra overview regions.
+- Missed: The previous simplification removed sections but still kept the same broad header, big middle card, and lower support block silhouette, so it still read as the same dashboard.
+- Verification: `npm test`, `npm run lint`, `npm run typecheck`, and `npm run build` all passed after the console-style dashboard pass.
 
