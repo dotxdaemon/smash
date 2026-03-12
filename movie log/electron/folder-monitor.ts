@@ -23,17 +23,23 @@ export function createFolderMonitor(options: FolderMonitorOptions) {
       const knownPaths = new Set(await options.loadKnownPaths(folderPath));
       const currentPaths = (await scanFolderContents(folderPath)).map((item) => item.sourcePath);
 
-      await options.saveKnownPaths(folderPath, currentPaths);
-
       if (!emitNewItems) {
+        await options.saveKnownPaths(folderPath, currentPaths);
         return;
       }
 
-      for (const itemPath of currentPaths) {
-        if (!knownPaths.has(itemPath)) {
-          await options.onDiscover(itemPath);
-        }
+      const newPaths = currentPaths.filter((itemPath) => !knownPaths.has(itemPath));
+
+      if (newPaths.length === 0) {
+        await options.saveKnownPaths(folderPath, currentPaths);
+        return;
       }
+
+      for (const itemPath of newPaths) {
+        await options.onDiscover(itemPath);
+      }
+
+      await options.saveKnownPaths(folderPath, currentPaths);
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code;
 

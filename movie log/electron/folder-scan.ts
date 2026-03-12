@@ -3,6 +3,7 @@
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createEntryFromPath } from '../shared/history.js';
+import { isTrackableMediaItem } from '../shared/media-items.js';
 import type { EntryKind, FolderContentsItem } from '../shared/types.js';
 
 export async function scanFolderContents(folderPath: string): Promise<FolderContentsItem[]> {
@@ -22,6 +23,7 @@ export async function scanFolderContents(folderPath: string): Promise<FolderCont
           title: watchEntry.title
         };
       })
+      .filter((item) => isTrackableMediaItem(item.sourcePath, item.sourceKind))
       .sort((left, right) => left.title.localeCompare(right.title) || left.sourcePath.localeCompare(right.sourcePath));
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code;

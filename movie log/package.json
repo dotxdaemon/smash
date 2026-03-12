@@ -3,12 +3,15 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "main": "dist-electron/main.js",
+  "main": "dist-electron/electron/main.js",
   "scripts": {
     "dev": "node ./scripts/dev.mjs",
-    "build": "vite build && tsc -p tsconfig.node.json --outDir dist-electron",
+    "build": "vite build && tsc -p tsconfig.electron.json --outDir dist-electron",
+    "package:mac": "npm run build && node ./scripts/package-mac.mjs",
+    "open:mac": "open './release/mac/Movie Log.app'",
     "start": "node ./scripts/dev.mjs",
     "capture": "node ./scripts/capture.mjs",
+    "capture:mac": "node ./scripts/capture-packaged.mjs",
     "test": "vitest run",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit"

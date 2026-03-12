@@ -1,11 +1,14 @@
 // ABOUTME: Verifies that watched folders only emit newly added top-level items after startup.
 // ABOUTME: Uses the real filesystem so the monitor logic matches how the desktop app discovers media.
-import { mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createFolderMonitor } from '../electron/folder-monitor.js';
+import { scanFolderContents } from '../electron/folder-scan.js';
+import { createHistoryStore } from '../electron/store.js';
+import { createEntryFromPath } from '../shared/history.js';
 
 async function waitForDiscovery(paths: string[]) {
   for (let attempt = 0; attempt < 40; attempt += 1) {
@@ -19,6 +22,20 @@ async function waitForDiscovery(paths: string[]) {
   throw new Error('Timed out waiting for a watched-folder discovery');
 }
 
+async function waitForHistory(store: ReturnType<typeof createHistoryStore>) {
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const state = await store.readState();
+
+    if (state.history.length > 0) {
+      return;
+    }
+
+    await delay(50);
+  }
+
+  throw new Error('Timed out waiting for watched-folder history to be recorded');
+}
+
 describe('createFolderMonitor', () => {
   let rootDirectory = '';
 
@@ -30,10 +47,11 @@ describe('createFolderMonitor', () => {
     await rm(rootDirectory, { recursive: true, force: true });
   });
 
-  it('ignores existing items and emits newly added top-level folders', async () => {
+  it('ignores hidden and non-media files and emits newly added top-level folders and media files', async () => {
     const inboxPath = join(rootDirectory, 'Media Inbox');
     await mkdir(inboxPath);
-    await mkdir(join(inboxPath, 'Already There'));
+    await writeFile(join(inboxPath, 'Already There.txt'), 'text');
+    await writeFile(join(inboxPath, '.DS_Store'), 'junk');
 
     const seenPaths: string[] = [];
     const knownByFolder = new Map<string, string[]>();
@@ -49,11 +67,14 @@ describe('createFolderMonitor', () => {
     });
 
     await monitor.watchFolder(inboxPath);
-    await mkdir(join(inboxPath, 'Just Added'));
+    await writeFile(join(inboxPath, '.localized'), 'junk');
+    await writeFile(join(inboxPath, 'Just Added.txt'), 'text');
+    await mkdir(join(inboxPath, 'Movie Folder'));
+    await writeFile(join(inboxPath, 'Movie File.mkv'), 'movie');
     await waitForDiscovery(seenPaths);
     await monitor.dispose();
 
-    expect(seenPaths).toEqual([join(inboxPath, 'Just Added')]);
+    expect(seenPaths).toEqual([join(inboxPath, 'Movie File.mkv'), join(inboxPath, 'Movie Folder')]);
   });
 
   it('does not throw when a watched folder is missing', async () => {
@@ -68,5 +89,42 @@ describe('createFolderMonitor', () => {
 
     await expect(monitor.watchFolder(join(rootDirectory, 'Missing Folder'))).resolves.toBeUndefined();
     await monitor.dispose();
+  });
+
+  it('records one history entry when a new top-level item arrives in a watched folder', async () => {
+    const inboxPath = join(rootDirectory, 'Media Inbox');
+    const dataDirectory = join(rootDirectory, 'Data');
+    const store = createHistoryStore(dataDirectory);
+    await mkdir(inboxPath);
+    await store.addWatchedFolder(inboxPath);
+    await store.syncWatchedFolderContents(inboxPath, [], '2026-03-12T08:00:00.000Z');
+
+    const monitor = createFolderMonitor({
+      loadKnownPaths: async (folderPath) => store.readKnownPaths(folderPath),
+      saveKnownPaths: async (folderPath, knownPaths) => {
+        await store.writeKnownPaths(folderPath, knownPaths);
+      },
+      onDiscover: async () => {
+        const scannedAt = '2026-03-12T09:00:00.000Z';
+        const items = await scanFolderContents(inboxPath);
+        const newItems = await store.syncWatchedFolderContents(inboxPath, items, scannedAt);
+
+        if (newItems.length > 0) {
+          await store.addHistoryEntries(
+            newItems.map((item) => createEntryFromPath(item.sourcePath, 'watch', scannedAt, item.sourceKind))
+          );
+        }
+      },
+      settleMs: 25
+    });
+
+    await monitor.watchFolder(inboxPath);
+    await writeFile(join(inboxPath, 'Flow.mkv'), 'movie');
+    await waitForHistory(store);
+    await monitor.dispose();
+
+    const state = await store.readState();
+
+    expect(state.history.map((entry) => entry.sourcePath)).toEqual([join(inboxPath, 'Flow.mkv')]);
   });
 });

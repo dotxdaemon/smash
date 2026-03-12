@@ -1,6 +1,6 @@
 // ABOUTME: Runs the Electron desktop shell, local JSON store, and watched-folder integrations.
 // ABOUTME: Bridges native dialogs and file watching to the React renderer through a small IPC surface.
-import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, ipcMain, shell } from 'electron';
 import { stat } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,9 +9,11 @@ import { createFolderMonitor } from './folder-monitor.js';
 import { scanFolderContents } from './folder-scan.js';
 import { createHistoryStore } from './store.js';
 import { createEntryFromPath } from '../shared/history.js';
+import { isTrackableMediaItem } from '../shared/media-items.js';
 import type { EntryKind, MovieLogState, WatchEntry } from '../shared/types.js';
 
 const currentDirectory = dirname(fileURLToPath(import.meta.url));
+app.setName('Movie Log');
 const dataDirectory = process.env.MOVIE_LOG_DATA_DIR ?? join(app.getPath('userData'), 'movie-log');
 const DAILY_SCAN_MS = 24 * 60 * 60 * 1000;
 const historyStore = createHistoryStore(dataDirectory);
@@ -27,9 +29,14 @@ const folderMonitor = createFolderMonitor({
 let mainWindow: BrowserWindow | null = null;
 let dailyScanTimer: NodeJS.Timeout | null = null;
 
-async function createEntryForPath(itemPath: string, source: 'drop' | 'watch'): Promise<WatchEntry> {
+async function createEntryForPath(itemPath: string, source: 'drop' | 'watch'): Promise<WatchEntry | null> {
   const itemStats = await stat(itemPath);
   const sourceKind: EntryKind = itemStats.isDirectory() ? 'directory' : 'file';
+
+  if (!isTrackableMediaItem(itemPath, sourceKind)) {
+    return null;
+  }
+
   return createEntryFromPath(itemPath, source, new Date().toISOString(), sourceKind);
 }
 
@@ -65,6 +72,14 @@ async function broadcastState(): Promise<void> {
   mainWindow.webContents.send('movie-log:state-changed', await readState());
 }
 
+async function openPath(itemPath: string): Promise<void> {
+  const errorMessage = await shell.openPath(itemPath);
+
+  if (errorMessage) {
+    throw new Error(errorMessage);
+  }
+}
+
 async function captureIfRequested(): Promise<void> {
   if (!mainWindow || !process.env.MOVIE_LOG_CAPTURE_PATH) {
     return;
@@ -77,7 +92,7 @@ async function captureIfRequested(): Promise<void> {
     latestText = await mainWindow.webContents.executeJavaScript(`
       document.body ? document.body.innerText.toLowerCase() : ''
     `);
-    isReady = latestText.includes('recent activity') && latestText.includes('folder snapshot');
+    isReady = latestText.includes('recent history') && latestText.includes('settings');
 
     if (isReady) {
       break;
@@ -140,30 +155,61 @@ async function createWindow(): Promise<void> {
 }
 
 function registerIpcHandlers(): void {
+  ipcMain.handle('movie-log:add-watched-folders', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory', 'multiSelections']
+    });
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return [];
+    }
+
+    const folders = [];
+
+    for (const selectedPath of result.filePaths) {
+      const folder = await historyStore.addWatchedFolder(selectedPath);
+      await syncWatchedFolder(folder.path, false);
+      await folderMonitor.watchFolder(folder.path);
+      folders.push(folder);
+    }
+
+    await broadcastState();
+    return folders;
+  });
+
+  ipcMain.handle('movie-log:clear-history', async () => {
+    await historyStore.clearHistory();
+    await broadcastState();
+  });
+
+  ipcMain.handle('movie-log:copy-path', async (_event, itemPath: string) => {
+    clipboard.writeText(itemPath);
+  });
+
+  ipcMain.handle('movie-log:get-data-file-path', async () => historyStore.getDataFilePath());
+
   ipcMain.handle('movie-log:get-state', async () => readState());
 
   ipcMain.handle('movie-log:log-paths', async (_event, paths: string[]) => {
-    const entries = await Promise.all(paths.map((itemPath) => createEntryForPath(itemPath, 'drop')));
+    const entries = (await Promise.all(paths.map((itemPath) => createEntryForPath(itemPath, 'drop')))).filter(
+      (entry): entry is WatchEntry => entry !== null
+    );
     await historyStore.addHistoryEntries(entries);
     await broadcastState();
     return entries;
   });
 
-  ipcMain.handle('movie-log:pick-watched-folder', async () => {
-    const result = await dialog.showOpenDialog({
-      properties: ['openDirectory']
-    });
+  ipcMain.handle('movie-log:open-in-finder', async (_event, itemPath: string) => {
+    shell.showItemInFolder(itemPath);
+  });
 
-    const selectedPath = result.filePaths[0];
-    if (!selectedPath) {
-      return null;
-    }
+  ipcMain.handle('movie-log:open-item', async (_event, itemPath: string) => {
+    await openPath(itemPath);
+  });
 
-    const folder = await historyStore.addWatchedFolder(selectedPath);
-    await syncWatchedFolder(folder.path, false);
-    await folderMonitor.watchFolder(folder.path);
+  ipcMain.handle('movie-log:scan-now', async () => {
+    await syncAllWatchedFolders(true);
     await broadcastState();
-    return folder;
   });
 
   ipcMain.handle('movie-log:remove-watched-folder', async (_event, folderId: string) => {

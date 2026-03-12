@@ -17,15 +17,29 @@ describe('scanFolderContents', () => {
     await rm(rootDirectory, { recursive: true, force: true });
   });
 
-  it('lists the current top-level files and folders for initial population', async () => {
+  it('lists visible top-level folders and allowed media files for initial population', async () => {
     const moviesPath = join(rootDirectory, 'Movies');
     await mkdir(moviesPath);
     await mkdir(join(moviesPath, 'Severance'));
+    await writeFile(join(moviesPath, '.DS_Store'), 'junk');
+    await writeFile(join(moviesPath, 'Poster.jpg'), 'poster');
     await writeFile(join(moviesPath, 'The Brutalist.mkv'), 'movie');
+    await writeFile(join(moviesPath, 'Flow.mp4'), 'movie');
+    await writeFile(join(moviesPath, 'Clair de Lune.flac'), 'audio');
 
     const items = await scanFolderContents(moviesPath);
 
     expect(items).toEqual([
+      {
+        sourceKind: 'file',
+        sourcePath: join(moviesPath, 'Clair de Lune.flac'),
+        title: 'Clair de Lune'
+      },
+      {
+        sourceKind: 'file',
+        sourcePath: join(moviesPath, 'Flow.mp4'),
+        title: 'Flow'
+      },
       {
         sourceKind: 'directory',
         sourcePath: join(moviesPath, 'Severance'),

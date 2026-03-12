@@ -17,3 +17,6 @@
 - 2026-03-12: Once the preload worked, the capture gate still failed because innerText reflected uppercase heading styles, so the readiness check needed to be case-insensitive.
 - 2026-03-12: The final lint pass flagged the CommonJS preload for require(), so ESLint needed a tiny cjs-specific override rather than another preload rewrite.
 - 2026-03-12: Folder scanning now treats a chosen folder as a current snapshot, not a fake watch-history backfill: existing items populate the library list immediately, and only later arrivals become recent activity entries.
+- 2026-03-12: Sean asked for a Finder-openable app, a manual `Scan Now` button, duplicate suppression, and video-only folder detection so hidden junk like `.DS_Store` does not appear.
+- 2026-03-12: Sean clarified the product spec: watched folders should log visible top-level folders plus allowed media files, not only files, and the UI should be history-first with a separate settings screen.
+- 2026-03-12: The packaged app initially failed because Node's recursive copy rewrote Electron framework symlinks into absolute links back to node_modules; switching the app-template copy step to macOS `ditto` preserved the bundle structure and made the packaged app launch correctly.

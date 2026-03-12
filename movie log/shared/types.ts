@@ -42,9 +42,15 @@ export interface MovieLogState {
 
 export interface MovieLogApi {
   getState(): Promise<MovieLogState>;
+  getDataFilePath(): Promise<string>;
   logPaths(paths: string[]): Promise<WatchEntry[]>;
-  pickWatchedFolder(): Promise<WatchedFolder | null>;
+  addWatchedFolders(): Promise<WatchedFolder[]>;
   removeWatchedFolder(id: string): Promise<void>;
+  clearHistory(): Promise<void>;
+  copyPath(path: string): Promise<void>;
+  openInFinder(path: string): Promise<void>;
+  openItem(path: string): Promise<void>;
+  scanNow(): Promise<void>;
   pathForFile(file: unknown): string;
   subscribe(listener: (state: MovieLogState) => void): () => void;
 }

@@ -16,6 +16,21 @@ const EMPTY_STATE: PersistedState = {
   watchedFolders: []
 };
 
+function mergeHistoryEntries(existingEntries: WatchEntry[], incomingEntries: WatchEntry[]): WatchEntry[] {
+  const knownPaths = new Set(existingEntries.map((entry) => entry.sourcePath));
+  const addedPaths = new Set<string>();
+  const uniqueIncomingEntries = incomingEntries.filter((entry) => {
+    if (knownPaths.has(entry.sourcePath) || addedPaths.has(entry.sourcePath)) {
+      return false;
+    }
+
+    addedPaths.add(entry.sourcePath);
+    return true;
+  });
+
+  return sortEntriesByWatchedAt([...uniqueIncomingEntries, ...existingEntries]);
+}
+
 function sortLibraryItems(items: LibraryItem[]): LibraryItem[] {
   return [...items].sort((left, right) => left.title.localeCompare(right.title) || left.sourcePath.localeCompare(right.sourcePath));
 }
@@ -74,16 +89,22 @@ export function createHistoryStore(dataDirectory: string) {
 
     async addHistoryEntry(entry: WatchEntry): Promise<WatchEntry> {
       const state = await readPersistedState();
-      state.history = sortEntriesByWatchedAt([entry, ...state.history]);
+      state.history = mergeHistoryEntries(state.history, [entry]);
       await writePersistedState(state);
       return entry;
     },
 
     async addHistoryEntries(entries: WatchEntry[]): Promise<WatchEntry[]> {
       const state = await readPersistedState();
-      state.history = sortEntriesByWatchedAt([...entries, ...state.history]);
+      state.history = mergeHistoryEntries(state.history, entries);
       await writePersistedState(state);
       return entries;
+    },
+
+    async clearHistory(): Promise<void> {
+      const state = await readPersistedState();
+      state.history = [];
+      await writePersistedState(state);
     },
 
     async addWatchedFolder(folderPath: string): Promise<WatchedFolder> {
@@ -171,6 +192,10 @@ export function createHistoryStore(dataDirectory: string) {
       const state = await readPersistedState();
       state.knownPathsByFolder[folderPath] = [...knownPaths];
       await writePersistedState(state);
+    },
+
+    getDataFilePath(): string {
+      return dataFilePath;
     }
   };
 }

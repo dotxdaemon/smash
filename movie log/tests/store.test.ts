@@ -35,6 +35,22 @@ describe('createHistoryStore', () => {
     expect(state.watchedFolders[0]?.path).toBe('/Users/seankim/Media Inbox');
   });
 
+  it('does not add duplicate history entries for the same source path', async () => {
+    const store = createHistoryStore(dataDirectory);
+
+    await store.addHistoryEntry(
+      createEntryFromPath('/Users/seankim/Movies/Flow.mkv', 'watch', '2026-03-12T08:00:00.000Z', 'file')
+    );
+    await store.addHistoryEntry(
+      createEntryFromPath('/Users/seankim/Movies/Flow.mkv', 'watch', '2026-03-13T08:00:00.000Z', 'file')
+    );
+
+    const state = await store.readState();
+
+    expect(state.history).toHaveLength(1);
+    expect(state.history[0]?.watchedAt).toBe('2026-03-12T08:00:00.000Z');
+  });
+
   it('persists the current contents of a watched folder after a scan', async () => {
     const store = createHistoryStore(dataDirectory);
 
@@ -107,5 +123,58 @@ describe('createHistoryStore', () => {
     expect(state.libraryItems.map((item) => item.title)).toEqual(['Flow', 'Severance']);
     expect(severance?.firstSeenAt).toBe('2026-03-12T09:00:00.000Z');
     expect(severance?.lastSeenAt).toBe('2026-03-13T09:00:00.000Z');
+  });
+
+  it('does not return repeated items when the same folder contents are scanned again', async () => {
+    const store = createHistoryStore(dataDirectory);
+
+    await store.addWatchedFolder('/Users/seankim/Movies');
+
+    const firstScan = await store.syncWatchedFolderContents(
+      '/Users/seankim/Movies',
+      [
+        {
+          sourceKind: 'file',
+          sourcePath: '/Users/seankim/Movies/Flow.mkv',
+          title: 'Flow'
+        }
+      ],
+      '2026-03-12T09:00:00.000Z'
+    );
+    const secondScan = await store.syncWatchedFolderContents(
+      '/Users/seankim/Movies',
+      [
+        {
+          sourceKind: 'file',
+          sourcePath: '/Users/seankim/Movies/Flow.mkv',
+          title: 'Flow'
+        }
+      ],
+      '2026-03-13T09:00:00.000Z'
+    );
+
+    expect(firstScan).toEqual([
+      {
+        sourceKind: 'file',
+        sourcePath: '/Users/seankim/Movies/Flow.mkv',
+        title: 'Flow'
+      }
+    ]);
+    expect(secondScan).toEqual([]);
+  });
+
+  it('clears history without removing watched folders', async () => {
+    const store = createHistoryStore(dataDirectory);
+
+    await store.addHistoryEntry(
+      createEntryFromPath('/Users/seankim/Movies/Flow.mkv', 'drop', '2026-03-12T08:00:00.000Z', 'file')
+    );
+    await store.addWatchedFolder('/Users/seankim/Movies');
+    await store.clearHistory();
+
+    const state = await store.readState();
+
+    expect(state.history).toEqual([]);
+    expect(state.watchedFolders).toHaveLength(1);
   });
 });
