@@ -1,10 +1,11 @@
 // ABOUTME: Renders the desktop movie log interface and responds to folder and drop events.
 // ABOUTME: Shows watched folders, a manual drop target, and the recent watch history list.
 import { startTransition, useEffect, useState, type DragEvent } from 'react';
-import type { MovieLogState } from '../shared/types';
+import type { LibraryItem, MovieLogState } from '../shared/types';
 
 const emptyState: MovieLogState = {
   history: [],
+  libraryItems: [],
   watchedFolders: []
 };
 
@@ -88,6 +89,14 @@ export default function App() {
   };
 
   const historyItems = state.history.slice(0, 20);
+  const libraryItems = state.libraryItems.slice(0, 30);
+
+  const groupedLibraryItems = libraryItems.reduce<Map<string, LibraryItem[]>>((groups, item) => {
+    const existing = groups.get(item.folderPath) ?? [];
+    existing.push(item);
+    groups.set(item.folderPath, existing);
+    return groups;
+  }, new Map());
 
   return (
     <main className="app-shell">
@@ -96,18 +105,22 @@ export default function App() {
           <p className="eyebrow">Local Desktop Watch Log</p>
           <h1>Drop it in. Keep the record. Move on.</h1>
           <p className="summary">
-            Movie Log keeps a recent watch history from Finder drops and watched inbox folders. It stores only the
-            title, watched time, and original path on this machine.
+            Movie Log scans folders you choose, populates a local snapshot of what is already there, and refreshes
+            that record on launch plus a daily rescan while the app is open.
           </p>
         </div>
         <div className="stat-grid" aria-label="Current totals">
           <article className="stat-card">
             <span className="stat-value">{state.history.length}</span>
-            <span className="stat-label">Logged Items</span>
+            <span className="stat-label">Activity Entries</span>
           </article>
           <article className="stat-card">
             <span className="stat-value">{state.watchedFolders.length}</span>
-            <span className="stat-label">Watched Folders</span>
+            <span className="stat-label">Scanned Folders</span>
+          </article>
+          <article className="stat-card">
+            <span className="stat-value">{state.libraryItems.length}</span>
+            <span className="stat-label">Tracked Titles</span>
           </article>
         </div>
       </section>
@@ -125,8 +138,8 @@ export default function App() {
         <p className="drop-kicker">Manual Log</p>
         <h2>Drop a file or folder from Finder</h2>
         <p className="drop-copy">
-          Each top-level drop becomes one history entry. The app leaves the original item alone and records its name,
-          path, and timestamp.
+          Each top-level drop becomes one activity entry. Chosen folders scan their current top-level contents on
+          add, then refresh automatically every day while the app stays open.
         </p>
       </section>
 
@@ -140,16 +153,16 @@ export default function App() {
         <article className="panel">
           <div className="panel-header">
             <div>
-              <p className="panel-kicker">Folder Watchers</p>
-              <h2>Watched inbox folders</h2>
+              <p className="panel-kicker">Folder Scans</p>
+              <h2>Scanned folders</h2>
             </div>
             <button className="panel-button" onClick={() => void handlePickWatchedFolder()} type="button">
-              Add Watched Folder
+              Add Scan Folder
             </button>
           </div>
 
           {state.watchedFolders.length === 0 ? (
-            <p className="empty-copy">Add a folder to log new top-level arrivals automatically.</p>
+            <p className="empty-copy">Choose a folder like ~/Movies to populate the app from its current contents.</p>
           ) : (
             <ul className="stack-list">
               {state.watchedFolders.map((folder) => (
@@ -157,6 +170,11 @@ export default function App() {
                   <div>
                     <strong>{folder.name}</strong>
                     <p className="meta-path">{folder.path}</p>
+                    <p className="history-time">
+                      {folder.lastScannedAt
+                        ? `Last scanned ${timestampFormatter.format(new Date(folder.lastScannedAt))}`
+                        : 'Waiting for first scan'}
+                    </p>
                   </div>
                   <button
                     className="ghost-button"
@@ -174,20 +192,55 @@ export default function App() {
         <article className="panel">
           <div className="panel-header">
             <div>
-              <p className="panel-kicker">Recent History</p>
-              <h2>What you watched recently</h2>
+              <p className="panel-kicker">Folder Snapshot</p>
+              <h2>What is currently in your folders</h2>
+            </div>
+          </div>
+
+          {libraryItems.length === 0 ? (
+            <p className="empty-copy">No scanned titles yet. Add a folder and the app will populate this list.</p>
+          ) : (
+            <div className="snapshot-groups">
+              {Array.from(groupedLibraryItems.entries()).map(([folderPath, items]) => (
+                <section className="snapshot-group" key={folderPath}>
+                  <p className="history-time">{folderPath}</p>
+                  <ol className="history-list">
+                    {items.map((item) => (
+                      <li className="history-card" key={item.id}>
+                        <div className="history-topline">
+                          <strong>{item.title}</strong>
+                          <span className="history-badge">{item.sourceKind === 'file' ? 'File' : 'Folder'}</span>
+                        </div>
+                        <p className="history-time">
+                          Seen {timestampFormatter.format(new Date(item.lastSeenAt))}
+                        </p>
+                        <p className="meta-path">{item.sourcePath}</p>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
+              ))}
+            </div>
+          )}
+        </article>
+
+        <article className="panel panel-wide">
+          <div className="panel-header">
+            <div>
+              <p className="panel-kicker">Recent Activity</p>
+              <h2>What the app logged recently</h2>
             </div>
           </div>
 
           {historyItems.length === 0 ? (
-            <p className="empty-copy">Nothing logged yet. Drop a title or add a watched folder to start the record.</p>
+            <p className="empty-copy">No activity yet. Drops and newly discovered folder arrivals will show up here.</p>
           ) : (
             <ol className="history-list">
               {historyItems.map((entry) => (
                 <li className="history-card" key={entry.id}>
                   <div className="history-topline">
                     <strong>{entry.title}</strong>
-                    <span className="history-badge">{entry.source === 'drop' ? 'Dropped' : 'Watched Folder'}</span>
+                    <span className="history-badge">{entry.source === 'drop' ? 'Dropped' : 'Folder Sync'}</span>
                   </div>
                   <p className="history-time">{timestampFormatter.format(new Date(entry.watchedAt))}</p>
                   <p className="meta-path">{entry.sourcePath}</p>

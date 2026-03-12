@@ -10,35 +10,42 @@ import { setTimeout as delay } from 'node:timers/promises';
 const capturePath = join(homedir(), '.codex-artifacts', 'movie-log-desktop.png');
 const devServerUrl = 'http://127.0.0.1:4173';
 const temporaryDataDirectory = await mkdtemp(join(tmpdir(), 'movie-log-capture-'));
+const sampleFolderPath = join(temporaryDataDirectory, 'Media Inbox');
+
+await mkdir(sampleFolderPath, { recursive: true });
+await mkdir(join(sampleFolderPath, 'Severance'));
+await writeFile(join(sampleFolderPath, 'The Brutalist.mkv'), 'movie');
 
 const seededState = {
   history: [
     {
-      id: '2026-03-12T09:00:00.000Z:/Users/seankim/Media Inbox/Severance',
+      id: `2026-03-12T09:00:00.000Z:${join(sampleFolderPath, 'Severance')}`,
       source: 'drop',
       sourceKind: 'directory',
-      sourcePath: '/Users/seankim/Media Inbox/Severance',
+      sourcePath: join(sampleFolderPath, 'Severance'),
       title: 'Severance',
       watchedAt: '2026-03-12T09:00:00.000Z'
     },
     {
-      id: '2026-03-12T08:15:00.000Z:/Users/seankim/Media Inbox/The Brutalist.mkv',
+      id: `2026-03-12T08:15:00.000Z:${join(sampleFolderPath, 'The Brutalist.mkv')}`,
       source: 'watch',
       sourceKind: 'file',
-      sourcePath: '/Users/seankim/Media Inbox/The Brutalist.mkv',
+      sourcePath: join(sampleFolderPath, 'The Brutalist.mkv'),
       title: 'The Brutalist',
       watchedAt: '2026-03-12T08:15:00.000Z'
     }
   ],
+  libraryItems: [],
   knownPathsByFolder: {
-    '/Users/seankim/Media Inbox': ['/Users/seankim/Media Inbox/The Brutalist.mkv']
+    [sampleFolderPath]: []
   },
   watchedFolders: [
     {
-      id: '/Users/seankim/Media Inbox',
+      id: sampleFolderPath,
       addedAt: '2026-03-12T07:45:00.000Z',
+      lastScannedAt: null,
       name: 'Media Inbox',
-      path: '/Users/seankim/Media Inbox'
+      path: sampleFolderPath
     }
   ]
 };

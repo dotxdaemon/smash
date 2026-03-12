@@ -34,4 +34,78 @@ describe('createHistoryStore', () => {
     expect(state.watchedFolders).toHaveLength(1);
     expect(state.watchedFolders[0]?.path).toBe('/Users/seankim/Media Inbox');
   });
+
+  it('persists the current contents of a watched folder after a scan', async () => {
+    const store = createHistoryStore(dataDirectory);
+
+    await store.addWatchedFolder('/Users/seankim/Movies');
+    await store.syncWatchedFolderContents(
+      '/Users/seankim/Movies',
+      [
+        {
+          sourceKind: 'directory',
+          sourcePath: '/Users/seankim/Movies/Severance',
+          title: 'Severance'
+        },
+        {
+          sourceKind: 'file',
+          sourcePath: '/Users/seankim/Movies/The Brutalist.mkv',
+          title: 'The Brutalist'
+        }
+      ],
+      '2026-03-12T09:00:00.000Z'
+    );
+
+    const reloaded = createHistoryStore(dataDirectory);
+    const state = await reloaded.readState();
+
+    expect(state.libraryItems.map((item) => item.title)).toEqual(['Severance', 'The Brutalist']);
+    expect(state.watchedFolders[0]?.lastScannedAt).toBe('2026-03-12T09:00:00.000Z');
+  });
+
+  it('replaces removed items when a later folder scan updates the snapshot', async () => {
+    const store = createHistoryStore(dataDirectory);
+
+    await store.addWatchedFolder('/Users/seankim/Movies');
+    await store.syncWatchedFolderContents(
+      '/Users/seankim/Movies',
+      [
+        {
+          sourceKind: 'directory',
+          sourcePath: '/Users/seankim/Movies/Severance',
+          title: 'Severance'
+        },
+        {
+          sourceKind: 'file',
+          sourcePath: '/Users/seankim/Movies/The Brutalist.mkv',
+          title: 'The Brutalist'
+        }
+      ],
+      '2026-03-12T09:00:00.000Z'
+    );
+
+    await store.syncWatchedFolderContents(
+      '/Users/seankim/Movies',
+      [
+        {
+          sourceKind: 'directory',
+          sourcePath: '/Users/seankim/Movies/Severance',
+          title: 'Severance'
+        },
+        {
+          sourceKind: 'file',
+          sourcePath: '/Users/seankim/Movies/Flow.mkv',
+          title: 'Flow'
+        }
+      ],
+      '2026-03-13T09:00:00.000Z'
+    );
+
+    const state = await store.readState();
+    const severance = state.libraryItems.find((item) => item.title === 'Severance');
+
+    expect(state.libraryItems.map((item) => item.title)).toEqual(['Flow', 'Severance']);
+    expect(severance?.firstSeenAt).toBe('2026-03-12T09:00:00.000Z');
+    expect(severance?.lastSeenAt).toBe('2026-03-13T09:00:00.000Z');
+  });
 });

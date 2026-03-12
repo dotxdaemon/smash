@@ -16,3 +16,4 @@
 - 2026-03-12: Electron still treated preload.mjs as non-module in this path, so the working preload format needed to be CommonJS at preload.cjs.
 - 2026-03-12: Once the preload worked, the capture gate still failed because innerText reflected uppercase heading styles, so the readiness check needed to be case-insensitive.
 - 2026-03-12: The final lint pass flagged the CommonJS preload for require(), so ESLint needed a tiny cjs-specific override rather than another preload rewrite.
+- 2026-03-12: Folder scanning now treats a chosen folder as a current snapshot, not a fake watch-history backfill: existing items populate the library list immediately, and only later arrivals become recent activity entries.

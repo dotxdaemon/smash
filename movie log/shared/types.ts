@@ -15,12 +15,28 @@ export interface WatchEntry {
 export interface WatchedFolder {
   id: string;
   addedAt: string;
+  lastScannedAt: string | null;
   name: string;
   path: string;
 }
 
+export interface FolderContentsItem {
+  sourceKind: EntryKind;
+  sourcePath: string;
+  title: string;
+}
+
+export interface LibraryItem extends FolderContentsItem {
+  id: string;
+  firstSeenAt: string;
+  folderId: string;
+  folderPath: string;
+  lastSeenAt: string;
+}
+
 export interface MovieLogState {
   history: WatchEntry[];
+  libraryItems: LibraryItem[];
   watchedFolders: WatchedFolder[];
 }
 

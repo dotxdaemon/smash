@@ -3,7 +3,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { sortEntriesByWatchedAt } from '../shared/history.js';
-import type { MovieLogState, WatchEntry, WatchedFolder } from '../shared/types.js';
+import type { FolderContentsItem, LibraryItem, MovieLogState, WatchEntry, WatchedFolder } from '../shared/types.js';
 
 interface PersistedState extends MovieLogState {
   knownPathsByFolder: Record<string, string[]>;
@@ -11,13 +11,19 @@ interface PersistedState extends MovieLogState {
 
 const EMPTY_STATE: PersistedState = {
   history: [],
+  libraryItems: [],
   knownPathsByFolder: {},
   watchedFolders: []
 };
 
+function sortLibraryItems(items: LibraryItem[]): LibraryItem[] {
+  return [...items].sort((left, right) => left.title.localeCompare(right.title) || left.sourcePath.localeCompare(right.sourcePath));
+}
+
 function cloneState(state: PersistedState): PersistedState {
   return {
     history: [...state.history],
+    libraryItems: [...state.libraryItems],
     knownPathsByFolder: { ...state.knownPathsByFolder },
     watchedFolders: [...state.watchedFolders]
   };
@@ -35,6 +41,7 @@ export function createHistoryStore(dataDirectory: string) {
 
       return {
         history: sortEntriesByWatchedAt(parsed.history ?? []),
+        libraryItems: sortLibraryItems(parsed.libraryItems ?? []),
         knownPathsByFolder: parsed.knownPathsByFolder ?? {},
         watchedFolders: parsed.watchedFolders ?? []
       };
@@ -60,6 +67,7 @@ export function createHistoryStore(dataDirectory: string) {
 
       return {
         history: sortEntriesByWatchedAt(state.history),
+        libraryItems: sortLibraryItems(state.libraryItems),
         watchedFolders: [...state.watchedFolders]
       };
     },
@@ -89,6 +97,7 @@ export function createHistoryStore(dataDirectory: string) {
       const folder: WatchedFolder = {
         id: folderPath,
         addedAt: new Date().toISOString(),
+        lastScannedAt: null,
         name: basename(folderPath) || folderPath,
         path: folderPath
       };
@@ -108,9 +117,49 @@ export function createHistoryStore(dataDirectory: string) {
       }
 
       state.watchedFolders = state.watchedFolders.filter((item) => item.id !== folderId);
+      state.libraryItems = state.libraryItems.filter((item) => item.folderId !== folder.id);
       delete state.knownPathsByFolder[folder.path];
       await writePersistedState(state);
       return folder;
+    },
+
+    async syncWatchedFolderContents(
+      folderPath: string,
+      items: FolderContentsItem[],
+      scannedAt = new Date().toISOString()
+    ): Promise<FolderContentsItem[]> {
+      const state = await readPersistedState();
+      const knownPaths = new Set(state.knownPathsByFolder[folderPath] ?? []);
+      const existingItemsByPath = new Map(
+        state.libraryItems.filter((item) => item.folderPath === folderPath).map((item) => [item.sourcePath, item])
+      );
+      const folder = state.watchedFolders.find((item) => item.path === folderPath);
+      const nextItems: LibraryItem[] = items.map((item) => {
+        const existing = existingItemsByPath.get(item.sourcePath);
+
+        return {
+          ...item,
+          id: item.sourcePath,
+          firstSeenAt: existing?.firstSeenAt ?? scannedAt,
+          folderId: folder?.id ?? folderPath,
+          folderPath,
+          lastSeenAt: scannedAt
+        };
+      });
+
+      state.libraryItems = sortLibraryItems([
+        ...state.libraryItems.filter((item) => item.folderPath !== folderPath),
+        ...nextItems
+      ]);
+      state.knownPathsByFolder[folderPath] = items.map((item) => item.sourcePath);
+      state.watchedFolders = state.watchedFolders.map((item) =>
+        item.path === folderPath ? { ...item, lastScannedAt: scannedAt } : item
+      );
+      await writePersistedState(state);
+
+      return nextItems
+        .filter((item) => !knownPaths.has(item.sourcePath))
+        .map(({ sourceKind, sourcePath, title }) => ({ sourceKind, sourcePath, title }));
     },
 
     async readKnownPaths(folderPath: string): Promise<string[]> {

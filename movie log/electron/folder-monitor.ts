@@ -1,23 +1,14 @@
 // ABOUTME: Watches top-level inbox folders and reports newly added files or folders to the app.
 // ABOUTME: Uses real filesystem scans with a short settle delay so repeated events do not duplicate history.
-import { readdir, stat } from 'node:fs/promises';
+import { stat } from 'node:fs/promises';
 import { watch, type FSWatcher } from 'node:fs';
-import { join } from 'node:path';
+import { scanFolderContents } from './folder-scan.js';
 
 interface FolderMonitorOptions {
   loadKnownPaths(folderPath: string): Promise<string[]>;
   saveKnownPaths(folderPath: string, knownPaths: string[]): Promise<void>;
   onDiscover(itemPath: string): Promise<void> | void;
   settleMs?: number;
-}
-
-async function listTopLevelPaths(folderPath: string): Promise<string[]> {
-  const entries = await readdir(folderPath, { withFileTypes: true });
-
-  return entries
-    .filter((entry) => entry.isDirectory() || entry.isFile())
-    .map((entry) => join(folderPath, entry.name))
-    .sort((left, right) => left.localeCompare(right));
 }
 
 export function createFolderMonitor(options: FolderMonitorOptions) {
@@ -30,7 +21,7 @@ export function createFolderMonitor(options: FolderMonitorOptions) {
   async function syncFolder(folderPath: string, emitNewItems: boolean): Promise<void> {
     try {
       const knownPaths = new Set(await options.loadKnownPaths(folderPath));
-      const currentPaths = await listTopLevelPaths(folderPath);
+      const currentPaths = (await scanFolderContents(folderPath)).map((item) => item.sourcePath);
 
       await options.saveKnownPaths(folderPath, currentPaths);
 

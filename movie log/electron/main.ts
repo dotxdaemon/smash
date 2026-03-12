@@ -6,24 +6,26 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { createFolderMonitor } from './folder-monitor.js';
+import { scanFolderContents } from './folder-scan.js';
 import { createHistoryStore } from './store.js';
 import { createEntryFromPath } from '../shared/history.js';
 import type { EntryKind, MovieLogState, WatchEntry } from '../shared/types.js';
 
 const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const dataDirectory = process.env.MOVIE_LOG_DATA_DIR ?? join(app.getPath('userData'), 'movie-log');
+const DAILY_SCAN_MS = 24 * 60 * 60 * 1000;
 const historyStore = createHistoryStore(dataDirectory);
 const folderMonitor = createFolderMonitor({
   loadKnownPaths: historyStore.readKnownPaths,
   saveKnownPaths: historyStore.writeKnownPaths,
   onDiscover: async (itemPath) => {
-    const entry = await createEntryForPath(itemPath, 'watch');
-    await historyStore.addHistoryEntry(entry);
+    await syncWatchedFolder(dirname(itemPath), true);
     await broadcastState();
   }
 });
 
 let mainWindow: BrowserWindow | null = null;
+let dailyScanTimer: NodeJS.Timeout | null = null;
 
 async function createEntryForPath(itemPath: string, source: 'drop' | 'watch'): Promise<WatchEntry> {
   const itemStats = await stat(itemPath);
@@ -33,6 +35,26 @@ async function createEntryForPath(itemPath: string, source: 'drop' | 'watch'): P
 
 async function readState(): Promise<MovieLogState> {
   return historyStore.readState();
+}
+
+async function syncWatchedFolder(folderPath: string, recordNewItems: boolean): Promise<void> {
+  const scannedAt = new Date().toISOString();
+  const currentItems = await scanFolderContents(folderPath);
+  const newItems = await historyStore.syncWatchedFolderContents(folderPath, currentItems, scannedAt);
+
+  if (recordNewItems && newItems.length > 0) {
+    await historyStore.addHistoryEntries(
+      newItems.map((item) => createEntryFromPath(item.sourcePath, 'watch', scannedAt, item.sourceKind))
+    );
+  }
+}
+
+async function syncAllWatchedFolders(recordNewItems: boolean): Promise<void> {
+  const state = await readState();
+
+  for (const folder of state.watchedFolders) {
+    await syncWatchedFolder(folder.path, recordNewItems);
+  }
 }
 
 async function broadcastState(): Promise<void> {
@@ -55,7 +77,7 @@ async function captureIfRequested(): Promise<void> {
     latestText = await mainWindow.webContents.executeJavaScript(`
       document.body ? document.body.innerText.toLowerCase() : ''
     `);
-    isReady = latestText.includes('recent history') && latestText.includes('watched inbox folders');
+    isReady = latestText.includes('recent activity') && latestText.includes('folder snapshot');
 
     if (isReady) {
       break;
@@ -138,6 +160,7 @@ function registerIpcHandlers(): void {
     }
 
     const folder = await historyStore.addWatchedFolder(selectedPath);
+    await syncWatchedFolder(folder.path, false);
     await folderMonitor.watchFolder(folder.path);
     await broadcastState();
     return folder;
@@ -154,20 +177,37 @@ function registerIpcHandlers(): void {
 }
 
 async function startExistingWatchers(): Promise<void> {
-  const state = await readState();
+  await syncAllWatchedFolders(false);
 
+  const state = await readState();
   for (const folder of state.watchedFolders) {
     await folderMonitor.watchFolder(folder.path);
   }
 }
 
+function startDailyScanLoop(): void {
+  if (dailyScanTimer) {
+    clearInterval(dailyScanTimer);
+  }
+
+  dailyScanTimer = setInterval(() => {
+    void syncAllWatchedFolders(true).then(() => broadcastState());
+  }, DAILY_SCAN_MS);
+}
+
 app.whenReady().then(async () => {
   registerIpcHandlers();
   await startExistingWatchers();
+  startDailyScanLoop();
   await createWindow();
 });
 
 app.on('window-all-closed', () => {
+  if (dailyScanTimer) {
+    clearInterval(dailyScanTimer);
+    dailyScanTimer = null;
+  }
+
   if (process.platform !== 'darwin') {
     void folderMonitor.dispose().finally(() => app.quit());
   }
