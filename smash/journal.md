@@ -53,3 +53,107 @@
 - Missed: The previous console pass still left the bottom nav too dark and rounded, and it kept `Full log` as a parked utility button that interrupted the notes flow.
 - Verification: `npm test`, `npm run lint`, `npm run typecheck`, and `npm run build` all passed after the training-console refinement pass.
 
+## Weekly recap: 2026-03-05 to 2026-03-12
+
+### 1. What Sean asked for this week, and which bugs Sean asked Codex to fix
+
+- GitHub and deployment asks:
+  - Push the repo to `https://github.com/dotxdaemon`.
+  - Make a Vercel deployment.
+  - Make the app usable from a phone as a PWA.
+  - Later fix the fact that Vercel was still serving an older build than the current local app.
+- Repo process asks:
+  - Add the source-first policy to both `~/AGENTS.md` and repo `AGENTS.md`.
+  - Add a repo-local `journal.md`.
+  - Treat `fix` as a trigger word and log request, previous attempt, and resulting error.
+  - Simplify the journal policy wording after the first version was too verbose.
+- Front-end redesign asks:
+  - Read `SKILL.md` and redesign the front end more aggressively.
+  - Move away from a generic, padded multi-card dashboard.
+  - Make the product much simpler and closer to its core loop:
+    - log the set
+    - see the habit
+    - get the rule
+    - run the drill
+  - Keep reducing the dashboard until it stopped looking like a broad analytics product.
+  - Keep the final structure compact instead of rewriting it again once the training-console direction was correct.
+- Visual bugfix asks Sean called out explicitly:
+  - The first Palutena icon was not the correct SSBU stock logo.
+  - The icon was blurry, low resolution, haloed, touching the edges, and visually wrong multiple times.
+  - The bottom navigation wrapped, overlapped content, got clipped by screen corners, and felt like it belonged to a different app.
+  - The app still triggered zoom behavior Sean did not want.
+  - The UI had overlapping text, heavy container framing, and too many equally weighted panels.
+  - The later dashboard simplification still looked too similar to the earlier version and had not changed silhouette enough.
+  - The final console pass still had a nav and `Full log` control that looked visually disconnected from the rest of the product.
+
+### 2. What fixed those asks and bugs this week
+
+- GitHub / deploy / phone access:
+  - Created and pushed the public GitHub repo at `dotxdaemon/smash`.
+  - Linked the project to Vercel and did production deploys from the local repo.
+  - Added PWA support with manifest, service worker, and icon wiring so the app could be installed from a phone.
+  - Verified the live Vercel site after deploy instead of assuming the alias had moved.
+- Process / memory / instruction fixes:
+  - Added a reference-first policy to both AGENTS files so external assets and named references must be proven before editing.
+  - Added repo-local `journal.md` and started logging requests, prior attempts, resulting errors, misses, and verification outcomes.
+  - Simplified the journal policy wording so it stayed usable rather than turning into its own wall of text.
+- Dashboard / layout fixes:
+  - Removed repeated overview panels, then removed the stats strip and drill preview from the dashboard when they were not helping the core loop.
+  - Rebuilt the front end in Tailwind, then repeatedly tightened the dashboard hierarchy with failing tests and viewport checks.
+  - Replaced the stacked dashboard silhouette with a compact top bar and one unified training console that contains the habit, rule, drill, and recent notes.
+  - After the silhouette changed, refined only the remaining mismatches:
+    - lighter integrated bottom nav
+    - inline `Full log` link
+    - more intentional topbar
+    - smoother internal training-console spacing
+- Mobile and nav bug fixes:
+  - Scoped the notebook cover to the dashboard so non-dashboard views stopped starting underneath unnecessary hero content.
+  - Tightened mobile bottom-nav width, label wrapping, and spacing so labels no longer broke or clipped.
+  - Inset the mobile dock and honored safe-area spacing so it stopped getting cut off at the corners.
+  - Applied touch handling and minimum input font sizes so app-triggered zoom and focus jumps stopped happening.
+  - Lightened the nav chrome so it no longer looked like a dark slab pasted over a lighter editorial page.
+- Icon fixes:
+  - Switched from drawing the icon from memory to using exact Palutena stock-icon references.
+  - Added icon asset tests so incorrect or blurry icon regressions had a failing gate.
+  - Removed border treatments, clip-path framing, semi-transparent halo pixels, and overly literal low-resolution sprite presentation that caused blur or edge collisions.
+  - Iterated until the icon stopped touching the border and the shape matched the intended reference more closely.
+
+### 3. Notes for future tests
+
+- Deployment checks:
+  - After every visual/dashboard change, verify the live Vercel alias, not just the local build.
+  - Check the live page for the expected `data-section` landmarks in a real browser session.
+  - Do not trust a deploy until both `curl` and browser evaluation confirm the alias is serving the intended build.
+- Icon checks:
+  - Keep using exact source references rather than memory.
+  - Continue testing for:
+    - correct asset wiring
+    - no embedded blurry bitmap fallback where it should not exist
+    - no unintended border treatment
+    - no edge-touching bounds
+  - Render icon proof images at actual install-icon scale before calling the work done.
+- Mobile UI checks:
+  - Keep deterministic viewport checks at `390x844`.
+  - Continue verifying:
+    - nav height
+    - nav radius
+    - safe-area insets
+    - label wrapping
+    - no overlap with content
+    - no clipped corners
+    - no input-focus zoom jump
+  - For future modal or sheet work, explicitly add open/close, internal scroll, swipe-down, backdrop close, and nav interference checks.
+- Dashboard / IA checks:
+  - Preserve the current console silhouette:
+    - compact top bar
+    - one unified training surface
+    - recent notes as support
+  - Add or keep tests that fail if the main screen drifts back toward:
+    - multiple equal-weight dashboard cards
+    - repeated summary panels
+    - stats and analytics sections that compete with the core loop
+  - Treat “looks too similar to the last version” as a real failure mode and verify silhouette changes, not just styling changes.
+- Journal / process checks:
+  - Keep recording what Sean asked for, what failed, and what actually fixed it.
+  - When the same issue is reported more than once, search the journal first before touching code.
+  - For visual bug reports, capture before/after screenshots at the same viewport every time.
