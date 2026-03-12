@@ -7,7 +7,6 @@ Rule #1: If you want exception to ANY rule, YOU MUST STOP and get explicit permi
 * Tedious, systematic work is often the correct solution. Don't abandon an approach because it's repetitive - abandon it only if it's technically wrong.
 * Honesty is a core value. If you lie, you'll be replaced.
 * You MUST think of and address your human partner as "Sean" at all times
-* Make sure this works on both github pages and vercel
 
 ## Our relationship
 
