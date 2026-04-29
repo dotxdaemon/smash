@@ -178,3 +178,12 @@
 - Attempt: Added a failing shell test for a folio topbar, a spread console layout, a ledger notes strip, and a bare nav treatment; then converted the dashboard shell from a centered paper card into a split folio surface with a stronger rail, larger issue typography, and line-based nav states.
 - Result: The dashboard now reads as a folio spread instead of the same rounded card layout, and the before/after screenshots at both desktop and 390x844 show a materially different composition while keeping the same product structure.
 - Verification: `npm test -- src/App.test.tsx`, `npm test`, `npm run lint`, `npm run typecheck`, and `npm run build` all passed; fresh desktop/mobile before-and-after proof images were captured.
+
+## 2026-04-29
+
+- Request: Refigure the UI to more closely match Sean's provided gray/black/prismatic fashion reference, make the app more usable, and fix random bugs.
+- Previous attempt: The current repo screen was a soft beige rounded-card tracker, had no tests, and `loadSets()` trusted any parsed localStorage array as render-safe set data.
+- Attempt: Reproduced the current mobile/desktop UI, reproduced a malformed-storage History crash, added failing storage and shell tests, restyled the existing app content into a sharper ink-prism shell, and validated stored rows before returning them to the app.
+- Error: The reproduced bug crashed History with `RangeError: date value is not finite in DateTimeFormat.format()` after localStorage contained `[{"id":"bad","date":"not-a-date","opponent":42,"result":"draw"}]`.
+- Result: Malformed stored rows are now dropped before rendering, the same browser repro opens History with no console errors, the UI uses gray paper, black ink strokes, square controls, prismatic accents, larger mobile-safe input text, and a labeled tab nav without adding new visible content.
+- Verification: `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`, and `npm run build -- --base=/smash/` passed; fresh 390x844 and 1280x900 screenshots were captured.
