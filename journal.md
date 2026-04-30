@@ -187,3 +187,12 @@
 - Error: The reproduced bug crashed History with `RangeError: date value is not finite in DateTimeFormat.format()` after localStorage contained `[{"id":"bad","date":"not-a-date","opponent":42,"result":"draw"}]`.
 - Result: Malformed stored rows are now dropped before rendering, the same browser repro opens History with no console errors, the UI uses gray paper, black ink strokes, square controls, prismatic accents, larger mobile-safe input text, and a labeled tab nav without adding new visible content.
 - Verification: `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`, and `npm run build -- --base=/smash/` passed; fresh 390x844 and 1280x900 screenshots were captured.
+
+## 2026-04-30
+
+- Request: Fix the app because Sean's character is always Palutena.
+- What I tried last: The previous UI still exposed an editable `Your character` field and saved whatever value was typed there.
+- Attempt: Reproduced the bug by saving a `Fox` set with `Wolf` in the player-character field, added a failing shell test for a Palutena-only log screen, removed the editable character input, and made set creation write Palutena.
+- Error after I tried: The first implementation exported a helper from `App.tsx`, which made `npm run lint` fail with `react-refresh/only-export-components`; keeping the helper internal fixed that without adding another file.
+- Result: The log screen now displays Palutena as fixed, History shows `Playing Palutena`, and localStorage saves `"yourCharacter":"Palutena"` for new sets.
+- Verification: `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`, and `npm run build -- --base=/smash/` passed; browser repro confirmed the saved record uses Palutena with no console errors.

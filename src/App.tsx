@@ -8,13 +8,34 @@ import type { SetEntry } from './types'
 type View = 'log' | 'history' | 'stats'
 
 const VIEWS: View[] = ['log', 'history', 'stats']
+const PLAYER_CHARACTER = 'Palutena'
+
+type SetEntryInput = {
+  opponent: string
+  result: 'win' | 'loss'
+  notes: string
+}
+
+function createSetEntry({
+  opponent,
+  result,
+  notes,
+}: SetEntryInput): SetEntry {
+  return {
+    id: crypto.randomUUID(),
+    date: new Date().toISOString(),
+    opponent: opponent.trim(),
+    yourCharacter: PLAYER_CHARACTER,
+    result,
+    notes: notes.trim() || undefined,
+  }
+}
 
 function App() {
   const [sets, setSets] = useState(loadSets)
   const [view, setView] = useState<View>('log')
 
   const [opponent, setOpponent] = useState('')
-  const [yourCharacter, setYourCharacter] = useState('')
   const [result, setResult] = useState<'win' | 'loss'>('win')
   const [notes, setNotes] = useState('')
 
@@ -43,14 +64,7 @@ function App() {
     e.preventDefault()
     if (!opponent.trim()) return
 
-    const entry: SetEntry = {
-      id: crypto.randomUUID(),
-      date: new Date().toISOString(),
-      opponent: opponent.trim(),
-      yourCharacter: yourCharacter.trim() || undefined,
-      result,
-      notes: notes.trim() || undefined,
-    }
+    const entry = createSetEntry({ opponent, result, notes })
 
     const next = [entry, ...sets]
     setSets(next)
@@ -110,13 +124,7 @@ function App() {
 
                 <label className="field-label">
                   <span>Your character</span>
-                  <input
-                    className="field"
-                    list="characters"
-                    value={yourCharacter}
-                    onChange={(e) => setYourCharacter(e.target.value)}
-                    placeholder="e.g. Wolf"
-                  />
+                  <span className="character-value">{PLAYER_CHARACTER}</span>
                 </label>
               </div>
 
@@ -176,9 +184,7 @@ function App() {
                         </div>
                         <span className="set-date">{formatDate(set.date)}</span>
                       </div>
-                      {set.yourCharacter && (
-                        <p className="set-meta">Playing {set.yourCharacter}</p>
-                      )}
+                      <p className="set-meta">Playing {PLAYER_CHARACTER}</p>
                       {set.notes && <p className="set-notes">{set.notes}</p>}
                       <button
                         type="button"

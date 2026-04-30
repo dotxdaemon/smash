@@ -199,6 +199,20 @@
     font-weight: 700;
   }
 
+  .character-value {
+    display: flex;
+    min-height: 3.15rem;
+    margin-top: 0.5rem;
+    align-items: center;
+    border: 1px solid color-mix(in srgb, var(--color-line-strong) 45%, transparent);
+    border-radius: 0.2rem;
+    background: rgb(16 16 17 / 0.06);
+    color: var(--color-ink);
+    font-size: 1rem;
+    font-weight: 800;
+    padding: 0.7rem 0.85rem;
+  }
+
   .field {
     display: block;
     width: 100%;

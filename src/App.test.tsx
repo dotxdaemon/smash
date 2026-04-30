@@ -13,4 +13,11 @@ describe('App shell', () => {
     expect(html).toContain('data-ink-stroke="true"')
     expect(html).not.toContain('rounded-xl')
   })
+
+  it('renders Palutena as the only player character on the log screen', () => {
+    const html = renderToStaticMarkup(<App />)
+
+    expect(html).toContain('Palutena')
+    expect(html).not.toContain('placeholder="e.g. Wolf"')
+  })
 })
