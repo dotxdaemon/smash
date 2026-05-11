@@ -5,12 +5,13 @@ import { describe, expect, it } from 'vitest'
 import App from './App'
 
 describe('App shell', () => {
-  it('renders the ink-prism visual system without rounded card chrome', () => {
+  it('renders the compact training ledger system without rounded card chrome', () => {
     const html = renderToStaticMarkup(<App />)
 
-    expect(html).toContain('data-visual-system="ink-prism"')
+    expect(html).toContain('data-visual-system="training-ledger"')
+    expect(html).toContain('data-layout="compact-workspace"')
     expect(html).toContain('aria-label="Views"')
-    expect(html).toContain('data-ink-stroke="true"')
+    expect(html).not.toContain('data-ink-stroke')
     expect(html).not.toContain('rounded-xl')
   })
 

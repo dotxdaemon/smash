@@ -80,8 +80,12 @@ function App() {
   }
 
   return (
-    <div data-visual-system="ink-prism" className="app-shell">
-      <div data-ink-stroke="true" className="ink-frame">
+    <div
+      data-visual-system="training-ledger"
+      data-layout="compact-workspace"
+      className="app-shell"
+    >
+      <div className="app-frame">
         <header className="app-header">
           <div>
             <h1 className="app-title">Smash Tracker</h1>

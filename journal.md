@@ -196,3 +196,12 @@
 - Error after I tried: The first implementation exported a helper from `App.tsx`, which made `npm run lint` fail with `react-refresh/only-export-components`; keeping the helper internal fixed that without adding another file.
 - Result: The log screen now displays Palutena as fixed, History shows `Playing Palutena`, and localStorage saves `"yourCharacter":"Palutena"` for new sets.
 - Verification: `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`, and `npm run build -- --base=/smash/` passed; browser repro confirmed the saved record uses Palutena with no console errors.
+
+## 2026-05-11
+
+- Request: Fix the UI to be more user friendly and aesthetic, then commit and push to `main`.
+- What I tried last: The ink-prism UI matched the gray/black/prismatic fashion reference more closely, but the poster frame, decorative strokes, and oversized title made the daily logging workflow feel less friendly than it needed to be.
+- Attempt: Added a failing shell test for a compact training-ledger UI, removed the decorative ink-stroke shell, tightened the header/tabs/workspace/button treatment, and kept the Palutena-only set flow intact.
+- Error after I tried: The first targeted UI test failed as expected because the app still rendered `data-visual-system="ink-prism"` and `data-ink-stroke`; after the compact ledger change, the targeted test and full verification commands passed.
+- Result: The app now presents the same log/history/stats workflow in a calmer, compact workspace with clearer tab state, less poster chrome, and smaller mobile-first spacing.
+- Verification: `npm test -- src/App.test.tsx`, `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`, and `npm run build -- --base=/smash/` passed; mobile and desktop screenshots were captured, and the browser log-set flow saved `Playing Palutena` with no console errors.
