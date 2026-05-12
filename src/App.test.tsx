@@ -21,4 +21,11 @@ describe('App shell', () => {
     expect(html).toContain('Palutena')
     expect(html).not.toContain('placeholder="e.g. Wolf"')
   })
+
+  it('renders the training surfaces that turn logs into next actions', () => {
+    const html = renderToStaticMarkup(<App />)
+
+    expect(html).toContain('aria-label="Next set focus"')
+    expect(html).toContain('data-matchup-pages="history-opponents"')
+  })
 })

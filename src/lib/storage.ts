@@ -1,6 +1,7 @@
 // ABOUTME: Reads and writes locally saved Smash set records.
 // ABOUTME: Filters malformed stored rows before app views render them.
 import type { SetEntry } from '../types'
+import { isLossTag } from './training'
 
 const STORAGE_KEY = 'smash-tracker'
 
@@ -43,6 +44,18 @@ function isSetEntry(value: unknown): value is SetEntry {
   const validCharacter =
     record.yourCharacter === undefined || typeof record.yourCharacter === 'string'
   const validNotes = record.notes === undefined || typeof record.notes === 'string'
+  const validLossTags =
+    record.lossTags === undefined ||
+    (record.result === 'loss' &&
+      Array.isArray(record.lossTags) &&
+      record.lossTags.every(isLossTag))
 
-  return requiredStrings && validDate && validResult && validCharacter && validNotes
+  return (
+    requiredStrings &&
+    validDate &&
+    validResult &&
+    validCharacter &&
+    validNotes &&
+    validLossTags
+  )
 }

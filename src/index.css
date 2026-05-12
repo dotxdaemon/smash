@@ -153,6 +153,29 @@
     gap: 1.15rem;
   }
 
+  .focus-panel {
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.85rem;
+    border: 1px solid rgb(16 16 17 / 0.14);
+    border-radius: 0.35rem;
+    background: rgb(255 255 255 / 0.5);
+  }
+
+  .focus-kicker {
+    color: var(--color-support);
+    font-size: 0.78rem;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .focus-copy {
+    color: var(--color-ink);
+    font-size: 0.98rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
   .field-pair {
     display: grid;
     gap: 1rem;
@@ -230,6 +253,50 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem;
+  }
+
+  .tag-fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .tag-fieldset legend {
+    margin-bottom: 0.5rem;
+    color: var(--color-ink-soft);
+    font-size: 0.92rem;
+    font-weight: 700;
+  }
+
+  .tag-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tag-button {
+    min-height: 2.35rem;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid rgb(16 16 17 / 0.18);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.36);
+    color: var(--color-ink-soft);
+    font-size: 0.86rem;
+    font-weight: 800;
+  }
+
+  .tag-button:hover,
+  .tag-button:focus-visible {
+    border-color: rgb(16 16 17 / 0.36);
+    color: var(--color-ink);
+    outline: none;
+  }
+
+  .tag-button.is-active {
+    border-color: color-mix(in srgb, var(--color-danger) 72%, black);
+    background: color-mix(in srgb, var(--color-danger) 14%, white);
+    color: var(--color-danger);
   }
 
   .choice-button,
@@ -359,8 +426,24 @@
     font-weight: 800;
   }
 
+  .opponent-link,
+  .stat-name {
+    border-bottom: 1px solid rgb(16 16 17 / 0.22);
+    color: var(--color-ink);
+  }
+
+  .opponent-link:hover,
+  .opponent-link:focus-visible,
+  .stat-name:hover,
+  .stat-name:focus-visible {
+    border-color: var(--color-support);
+    color: var(--color-support);
+    outline: none;
+  }
+
   .set-date,
   .set-meta,
+  .set-tags,
   .rate {
     color: var(--color-ink-faint);
     font-size: 0.84rem;
@@ -368,9 +451,14 @@
   }
 
   .set-meta,
+  .set-tags,
   .set-notes,
   .delete-action {
     margin-top: 0.5rem;
+  }
+
+  .set-tags {
+    color: var(--color-danger);
   }
 
   .set-notes {
@@ -389,6 +477,95 @@
   .delete-action:focus-visible {
     color: var(--color-danger);
     outline: none;
+  }
+
+  .matchup-panel {
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  .back-action {
+    justify-self: start;
+    color: var(--color-ink-faint);
+    font-size: 0.85rem;
+    font-weight: 800;
+  }
+
+  .back-action:hover,
+  .back-action:focus-visible {
+    color: var(--color-support);
+    outline: none;
+  }
+
+  .matchup-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid rgb(16 16 17 / 0.18);
+  }
+
+  .matchup-header h2 {
+    color: var(--color-ink);
+    font-size: clamp(1.7rem, 3vw, 2.4rem);
+    line-height: 1;
+  }
+
+  .matchup-header p,
+  .empty-copy {
+    margin-top: 0.35rem;
+    color: var(--color-ink-faint);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .matchup-card {
+    display: grid;
+    gap: 0.55rem;
+    padding: 0.85rem;
+    border: 1px solid rgb(16 16 17 / 0.12);
+    border-radius: 0.35rem;
+    background: rgb(255 255 255 / 0.42);
+  }
+
+  .matchup-card h3 {
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 0.86rem;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .matchup-card p {
+    color: var(--color-ink-soft);
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.45;
+  }
+
+  .tag-summary-list,
+  .note-list {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tag-summary-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--color-ink-soft);
+    font-size: 0.9rem;
+    font-weight: 800;
+  }
+
+  .note-list li {
+    color: var(--color-ink-soft);
+    font-size: 0.95rem;
+    line-height: 1.45;
   }
 
   @media (max-width: 640px) {
@@ -427,6 +604,7 @@
     }
 
     .set-row-header,
+    .matchup-header,
     .stat-row {
       align-items: start;
       flex-direction: column;

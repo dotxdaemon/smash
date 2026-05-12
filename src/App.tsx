@@ -3,7 +3,13 @@
 import { type FormEvent, useMemo, useState } from 'react'
 import { CHARACTERS } from './data/characters'
 import { loadSets, saveSets } from './lib/storage'
-import type { SetEntry } from './types'
+import {
+  getMatchupSummary,
+  getNextSetFocus,
+  LOSS_TAGS,
+  type MatchupSummary,
+} from './lib/training'
+import type { LossTag, SetEntry } from './types'
 
 type View = 'log' | 'history' | 'stats'
 
@@ -14,14 +20,16 @@ type SetEntryInput = {
   opponent: string
   result: 'win' | 'loss'
   notes: string
+  lossTags: LossTag[]
 }
 
 function createSetEntry({
   opponent,
   result,
   notes,
+  lossTags,
 }: SetEntryInput): SetEntry {
-  return {
+  const entry: SetEntry = {
     id: crypto.randomUUID(),
     date: new Date().toISOString(),
     opponent: opponent.trim(),
@@ -29,6 +37,12 @@ function createSetEntry({
     result,
     notes: notes.trim() || undefined,
   }
+
+  if (result === 'loss' && lossTags.length > 0) {
+    entry.lossTags = [...lossTags]
+  }
+
+  return entry
 }
 
 function App() {
@@ -38,6 +52,8 @@ function App() {
   const [opponent, setOpponent] = useState('')
   const [result, setResult] = useState<'win' | 'loss'>('win')
   const [notes, setNotes] = useState('')
+  const [lossTags, setLossTags] = useState<LossTag[]>([])
+  const [selectedOpponent, setSelectedOpponent] = useState<string | null>(null)
 
   const sortedSets = useMemo(
     () => [...sets].sort((a, b) => b.date.localeCompare(a.date)),
@@ -59,24 +75,48 @@ function App() {
 
   const totalWins = sets.filter((s) => s.result === 'win').length
   const totalLosses = sets.filter((s) => s.result === 'loss').length
+  const nextFocus = useMemo(() => getNextSetFocus(sortedSets), [sortedSets])
+  const matchup = useMemo(
+    () => (selectedOpponent ? getMatchupSummary(sets, selectedOpponent) : null),
+    [selectedOpponent, sets],
+  )
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
     if (!opponent.trim()) return
 
-    const entry = createSetEntry({ opponent, result, notes })
+    const entry = createSetEntry({ opponent, result, notes, lossTags })
 
     const next = [entry, ...sets]
     setSets(next)
     saveSets(next)
     setOpponent('')
     setNotes('')
+    setLossTags([])
   }
 
   function deleteSet(id: string) {
     const next = sets.filter((s) => s.id !== id)
     setSets(next)
     saveSets(next)
+  }
+
+  function selectView(nextView: View) {
+    setView(nextView)
+    if (nextView !== 'history') setSelectedOpponent(null)
+  }
+
+  function toggleLossTag(tag: LossTag) {
+    setLossTags((current) =>
+      current.includes(tag)
+        ? current.filter((selectedTag) => selectedTag !== tag)
+        : [...current, tag],
+    )
+  }
+
+  function openMatchup(nextOpponent: string) {
+    setSelectedOpponent(nextOpponent)
+    setView('history')
   }
 
   return (
@@ -103,16 +143,23 @@ function App() {
               key={v}
               type="button"
               className={`view-tab ${view === v ? 'is-active' : ''}`}
-              onClick={() => setView(v)}
+              onClick={() => selectView(v)}
             >
               {v === 'log' ? 'Log Set' : v === 'history' ? 'History' : 'Stats'}
             </button>
           ))}
         </nav>
 
-        <main className="workspace">
+        <main className="workspace" data-matchup-pages="history-opponents">
           {view === 'log' && (
             <form className="log-form" onSubmit={onSubmit}>
+              <section aria-label="Next set focus" className="focus-panel">
+                <span className="focus-kicker">
+                  {nextFocus.tagLabel ?? nextFocus.title}
+                </span>
+                <p className="focus-copy">{nextFocus.detail}</p>
+              </section>
+
               <div className="field-pair">
                 <label className="field-label">
                   <span>Opponent</span>
@@ -154,6 +201,27 @@ function App() {
                 </div>
               </fieldset>
 
+              {result === 'loss' && (
+                <fieldset className="tag-fieldset">
+                  <legend>Loss tags</legend>
+                  <div className="tag-options">
+                    {LOSS_TAGS.map((tag) => (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        aria-pressed={lossTags.includes(tag.id)}
+                        className={`tag-button ${
+                          lossTags.includes(tag.id) ? 'is-active' : ''
+                        }`}
+                        onClick={() => toggleLossTag(tag.id)}
+                      >
+                        {tag.label}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
+
               <label className="field-label">
                 <span>Notes</span>
                 <textarea
@@ -173,7 +241,13 @@ function App() {
 
           {view === 'history' && (
             <div>
-              {sortedSets.length === 0 ? (
+              {matchup ? (
+                <MatchupPanel
+                  matchup={matchup}
+                  onBack={() => setSelectedOpponent(null)}
+                  onDelete={deleteSet}
+                />
+              ) : sortedSets.length === 0 ? (
                 <p className="empty-state">No sets logged yet.</p>
               ) : (
                 <ul className="set-list">
@@ -184,11 +258,22 @@ function App() {
                           <span className={`result-mark is-${set.result}`}>
                             {set.result === 'win' ? 'W' : 'L'}
                           </span>
-                          <span className="set-opponent">vs {set.opponent}</span>
+                          <button
+                            type="button"
+                            className="opponent-link"
+                            onClick={() => openMatchup(set.opponent)}
+                          >
+                            vs {set.opponent}
+                          </button>
                         </div>
                         <span className="set-date">{formatDate(set.date)}</span>
                       </div>
                       <p className="set-meta">Playing {PLAYER_CHARACTER}</p>
+                      {set.lossTags && set.lossTags.length > 0 && (
+                        <p className="set-tags">
+                          {set.lossTags.map(labelForLossTag).join(' · ')}
+                        </p>
+                      )}
                       {set.notes && <p className="set-notes">{set.notes}</p>}
                       <button
                         type="button"
@@ -212,7 +297,13 @@ function App() {
                 <ul className="stats-list">
                   {stats.map((s) => (
                     <li key={s.name} className="stat-row">
-                      <span className="stat-name">{s.name}</span>
+                      <button
+                        type="button"
+                        className="stat-name"
+                        onClick={() => openMatchup(s.name)}
+                      >
+                        {s.name}
+                      </button>
                       <div className="stat-record">
                         <span className="wins">{s.wins}W</span>
                         <span className="losses">{s.losses}L</span>
@@ -238,6 +329,106 @@ function App() {
       </datalist>
     </div>
   )
+}
+
+function MatchupPanel({
+  matchup,
+  onBack,
+  onDelete,
+}: {
+  matchup: MatchupSummary
+  onBack: () => void
+  onDelete: (id: string) => void
+}) {
+  const rate =
+    matchup.total > 0 ? `${Math.round((matchup.wins / matchup.total) * 100)}%` : '–'
+
+  return (
+    <section className="matchup-panel">
+      <button type="button" className="back-action" onClick={onBack}>
+        Back to history
+      </button>
+
+      <header className="matchup-header">
+        <div>
+          <h2>Palutena vs {matchup.opponent}</h2>
+          <p>
+            {matchup.total} sets · {matchup.wins}W {matchup.losses}L · {rate}
+          </p>
+        </div>
+      </header>
+
+      <section className="matchup-card">
+        <h3>Next focus</h3>
+        <p>{matchup.focus.detail}</p>
+      </section>
+
+      <section className="matchup-card">
+        <h3>Common loss tags</h3>
+        {matchup.commonLossTags.length === 0 ? (
+          <p className="empty-copy">No tagged losses yet.</p>
+        ) : (
+          <ul className="tag-summary-list">
+            {matchup.commonLossTags.map((tag) => (
+              <li key={tag.id}>
+                <span>{tag.label}</span>
+                <span>{tag.count}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="matchup-card">
+        <h3>Useful notes</h3>
+        {matchup.notes.length === 0 ? (
+          <p className="empty-copy">No notes for this matchup yet.</p>
+        ) : (
+          <ul className="note-list">
+            {matchup.notes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="matchup-card">
+        <h3>Last 5 sets</h3>
+        <ul className="set-list">
+          {matchup.recentSets.map((set) => (
+            <li key={set.id} className="set-row">
+              <div className="set-row-header">
+                <div className="set-summary">
+                  <span className={`result-mark is-${set.result}`}>
+                    {set.result === 'win' ? 'W' : 'L'}
+                  </span>
+                  <span className="set-opponent">vs {set.opponent}</span>
+                </div>
+                <span className="set-date">{formatDate(set.date)}</span>
+              </div>
+              {set.lossTags && set.lossTags.length > 0 && (
+                <p className="set-tags">
+                  {set.lossTags.map(labelForLossTag).join(' · ')}
+                </p>
+              )}
+              {set.notes && <p className="set-notes">{set.notes}</p>}
+              <button
+                type="button"
+                className="delete-action"
+                onClick={() => onDelete(set.id)}
+              >
+                Delete
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </section>
+  )
+}
+
+function labelForLossTag(tag: LossTag): string {
+  return LOSS_TAGS.find((item) => item.id === tag)?.label ?? tag
 }
 
 function formatDate(iso: string): string {

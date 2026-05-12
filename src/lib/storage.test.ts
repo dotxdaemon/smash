@@ -11,8 +11,9 @@ describe('parseStoredSets', () => {
         date: '2026-04-29T20:00:00.000Z',
         opponent: 'Fox',
         yourCharacter: 'Wolf',
-        result: 'win',
+        result: 'loss',
         notes: 'Stop jumping from ledge.',
+        lossTags: ['panic-option', 'got-grabbed'],
       },
     ])
 
@@ -22,8 +23,9 @@ describe('parseStoredSets', () => {
         date: '2026-04-29T20:00:00.000Z',
         opponent: 'Fox',
         yourCharacter: 'Wolf',
-        result: 'win',
+        result: 'loss',
         notes: 'Stop jumping from ledge.',
+        lossTags: ['panic-option', 'got-grabbed'],
       },
     ])
   })
@@ -47,6 +49,20 @@ describe('parseStoredSets', () => {
         date: '2026-04-29T20:00:00.000Z',
         opponent: 42,
         result: 'loss',
+      },
+      {
+        id: 'bad-loss-tags',
+        date: '2026-04-29T20:00:00.000Z',
+        opponent: 'Fox',
+        result: 'loss',
+        lossTags: ['panic-option', 42],
+      },
+      {
+        id: 'bad-win-loss-tags',
+        date: '2026-04-29T20:00:00.000Z',
+        opponent: 'Fox',
+        result: 'win',
+        lossTags: ['panic-option'],
       },
     ])
 
