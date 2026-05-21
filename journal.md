@@ -211,3 +211,12 @@
 - Error after I tried: The first targeted test run failed because `src/lib/training.ts` did not exist, malformed `lossTags` were accepted by storage, and the app did not render a next-focus or matchup surface yet.
 - Result: Losses can now be tagged with fast reason chips, saved tags drive a deterministic next-set focus, History and Stats opponent names open Palutena matchup pages with record, common loss tags, useful notes, recent sets, and a matchup focus. Stored records without `lossTags` still load, and malformed or win-attached `lossTags` are dropped.
 - Verification: `npm test -- src/App.test.tsx src/lib/storage.test.ts src/lib/training.test.ts` first failed as expected, then passed; `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`, and `npm run build -- --base=/smash/` passed. A 390x844 browser screenshot using tagged Fox losses showed the next-set focus card.
+
+## 2026-05-20
+
+- Request: Fix free-text opponent names so known characters do not split matchup pages, stats, or next-set focus across exact strings like `Fox`, `fox`, and near-duplicates.
+- What I tried last: The previous usefulness pass added matchup pages and next-set focus, but opponent names were still saved and loaded as raw strings.
+- Attempt: Added failing tests for character-list canonicalization and safe stored-row canonicalization, then added one shared opponent-name canonicalizer used by set creation and storage load/save.
+- Error after I tried: The targeted tests first failed because `canonicalizeOpponentName` did not exist and stored rows still returned `fox`, `  FOX  `, and `r o b`; after the boundary fix, the targeted and full verification commands passed.
+- Result: Known character names now use the `CHARACTERS` spelling at entry time and when existing valid stored rows are hydrated, while unknown free-text opponents are preserved after whitespace cleanup.
+- Verification: `npm test -- src/data/characters.test.ts src/lib/storage.test.ts`, `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`, and `npm run build -- --base=/smash/` passed. A 390x844 browser screenshot showed raw stored Fox variants grouped into one `Fox` stats row.

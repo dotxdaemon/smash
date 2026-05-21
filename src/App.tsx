@@ -1,7 +1,7 @@
 // ABOUTME: Renders the set logging, history, and matchup stats app shell.
 // ABOUTME: Keeps the tracker focused on quick entry and recent performance review.
 import { type FormEvent, useMemo, useState } from 'react'
-import { CHARACTERS } from './data/characters'
+import { CHARACTERS, canonicalizeOpponentName } from './data/characters'
 import { loadSets, saveSets } from './lib/storage'
 import {
   getMatchupSummary,
@@ -32,7 +32,7 @@ function createSetEntry({
   const entry: SetEntry = {
     id: crypto.randomUUID(),
     date: new Date().toISOString(),
-    opponent: opponent.trim(),
+    opponent: canonicalizeOpponentName(opponent),
     yourCharacter: PLAYER_CHARACTER,
     result,
     notes: notes.trim() || undefined,

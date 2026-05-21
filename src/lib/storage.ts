@@ -1,6 +1,7 @@
 // ABOUTME: Reads and writes locally saved Smash set records.
 // ABOUTME: Filters malformed stored rows before app views render them.
 import type { SetEntry } from '../types'
+import { canonicalizeOpponentName } from '../data/characters'
 import { isLossTag } from './training'
 
 const STORAGE_KEY = 'smash-tracker'
@@ -14,7 +15,7 @@ export function loadSets(): SetEntry[] {
 }
 
 export function saveSets(sets: SetEntry[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sets))
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sets.map(withCanonicalOpponent)))
 }
 
 export function parseStoredSets(raw: string | null): SetEntry[] {
@@ -23,9 +24,16 @@ export function parseStoredSets(raw: string | null): SetEntry[] {
   try {
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed.filter(isSetEntry)
+    return parsed.filter(isSetEntry).map(withCanonicalOpponent)
   } catch {
     return []
+  }
+}
+
+function withCanonicalOpponent(set: SetEntry): SetEntry {
+  return {
+    ...set,
+    opponent: canonicalizeOpponentName(set.opponent),
   }
 }
 

@@ -86,3 +86,22 @@ export const CHARACTERS = [
   'Kazuya',
   'Sora',
 ] as const
+
+const CHARACTER_BY_OPPONENT_NAME = new Map(
+  CHARACTERS.map((character) => [opponentNameKey(character), character]),
+)
+
+export function canonicalizeOpponentName(opponent: string): string {
+  const displayName = opponent.trim().replace(/\s+/g, ' ')
+
+  return CHARACTER_BY_OPPONENT_NAME.get(opponentNameKey(displayName)) ?? displayName
+}
+
+function opponentNameKey(value: string): string {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/&/g, 'and')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '')
+}

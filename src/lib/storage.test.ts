@@ -30,6 +30,35 @@ describe('parseStoredSets', () => {
     ])
   })
 
+  it('keeps stored rows while canonicalizing known opponent names', () => {
+    const stored = JSON.stringify([
+      {
+        id: 'set-1',
+        date: '2026-04-29T20:00:00.000Z',
+        opponent: 'fox',
+        result: 'loss',
+      },
+      {
+        id: 'set-2',
+        date: '2026-04-29T20:01:00.000Z',
+        opponent: '  FOX  ',
+        result: 'win',
+      },
+      {
+        id: 'set-3',
+        date: '2026-04-29T20:02:00.000Z',
+        opponent: 'r o b',
+        result: 'loss',
+      },
+    ])
+
+    expect(parseStoredSets(stored).map((set) => set.opponent)).toEqual([
+      'Fox',
+      'Fox',
+      'R.O.B.',
+    ])
+  })
+
   it('drops malformed set entries that would break history or stats', () => {
     const stored = JSON.stringify([
       {
