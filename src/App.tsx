@@ -23,6 +23,18 @@ type SetEntryInput = {
   lossTags: LossTag[]
 }
 
+function calcStreak(sets: SetEntry[]): { result: 'win' | 'loss'; count: number } | null {
+  if (sets.length === 0) return null
+  const sorted = [...sets].sort((a, b) => b.date.localeCompare(a.date))
+  const current = sorted[0].result
+  let count = 0
+  for (const set of sorted) {
+    if (set.result !== current) break
+    count++
+  }
+  return { result: current, count }
+}
+
 function createSetEntry({
   opponent,
   result,
@@ -75,6 +87,7 @@ function App() {
 
   const totalWins = sets.filter((s) => s.result === 'win').length
   const totalLosses = sets.filter((s) => s.result === 'loss').length
+  const streak = useMemo(() => calcStreak(sets), [sets])
   const nextFocus = useMemo(() => getNextSetFocus(sortedSets), [sortedSets])
   const matchup = useMemo(
     () => (selectedOpponent ? getMatchupSummary(sets, selectedOpponent) : null),
@@ -119,6 +132,17 @@ function App() {
     setView('history')
   }
 
+  function exportData() {
+    const json = JSON.stringify(sets, null, 2)
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `smash-tracker-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div
       data-visual-system="training-ledger"
@@ -132,9 +156,19 @@ function App() {
             <p className="app-status">
               {sets.length === 0
                 ? 'Log your first set.'
-                : `${sets.length} sets \u00b7 ${totalWins}W ${totalLosses}L`}
+                : `${sets.length} sets · ${totalWins}W ${totalLosses}L`}
+              {streak && streak.count >= 2 && (
+                <span className={`streak-pill is-${streak.result}`}>
+                  {streak.count}{streak.result === 'win' ? 'W' : 'L'} streak
+                </span>
+              )}
             </p>
           </div>
+          {sets.length > 0 && (
+            <button type="button" className="export-action" onClick={exportData}>
+              Export
+            </button>
+          )}
         </header>
 
         <nav aria-label="Views" className="view-tabs">
@@ -236,6 +270,29 @@ function App() {
               <button type="submit" className="primary-action">
                 Save Set
               </button>
+
+              {sortedSets.length > 0 && (
+                <section className="recent-log">
+                  <p className="recent-log-label">Recent</p>
+                  <ul className="recent-log-list">
+                    {sortedSets.slice(0, 3).map((set) => (
+                      <li key={set.id} className="recent-log-row">
+                        <span className={`result-mark is-${set.result}`}>
+                          {set.result === 'win' ? 'W' : 'L'}
+                        </span>
+                        <button
+                          type="button"
+                          className="opponent-link"
+                          onClick={() => openMatchup(set.opponent)}
+                        >
+                          vs {set.opponent}
+                        </button>
+                        <span className="recent-log-date">{formatDate(set.date)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
             </form>
           )}
 
@@ -270,9 +327,13 @@ function App() {
                       </div>
                       <p className="set-meta">Playing {PLAYER_CHARACTER}</p>
                       {set.lossTags && set.lossTags.length > 0 && (
-                        <p className="set-tags">
-                          {set.lossTags.map(labelForLossTag).join(' · ')}
-                        </p>
+                        <div className="set-tags">
+                          {set.lossTags.map((tag) => (
+                            <span key={tag} className="loss-tag-badge">
+                              {labelForLossTag(tag)}
+                            </span>
+                          ))}
+                        </div>
                       )}
                       {set.notes && <p className="set-notes">{set.notes}</p>}
                       <button
@@ -297,22 +358,32 @@ function App() {
                 <ul className="stats-list">
                   {stats.map((s) => (
                     <li key={s.name} className="stat-row">
-                      <button
-                        type="button"
-                        className="stat-name"
-                        onClick={() => openMatchup(s.name)}
-                      >
-                        {s.name}
-                      </button>
-                      <div className="stat-record">
-                        <span className="wins">{s.wins}W</span>
-                        <span className="losses">{s.losses}L</span>
-                        <span className="rate">
-                          {s.total > 0
-                            ? `${Math.round((s.wins / s.total) * 100)}%`
-                            : '–'}
-                        </span>
+                      <div className="stat-main">
+                        <button
+                          type="button"
+                          className="stat-name"
+                          onClick={() => openMatchup(s.name)}
+                        >
+                          {s.name}
+                        </button>
+                        <div className="stat-record">
+                          <span className="wins">{s.wins}W</span>
+                          <span className="losses">{s.losses}L</span>
+                          <span className="rate">
+                            {s.total > 0
+                              ? `${Math.round((s.wins / s.total) * 100)}%`
+                              : '–'}
+                          </span>
+                        </div>
                       </div>
+                      {s.total > 0 && (
+                        <div className="win-rate-bar">
+                          <div
+                            className="win-rate-fill"
+                            style={{ width: `${Math.round((s.wins / s.total) * 100)}%` }}
+                          />
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -346,7 +417,7 @@ function MatchupPanel({
   return (
     <section className="matchup-panel">
       <button type="button" className="back-action" onClick={onBack}>
-        Back to history
+        ← Back to history
       </button>
 
       <header className="matchup-header">
@@ -357,6 +428,15 @@ function MatchupPanel({
           </p>
         </div>
       </header>
+
+      {matchup.total > 0 && (
+        <div className="matchup-rate-bar">
+          <div
+            className="win-rate-fill"
+            style={{ width: `${Math.round((matchup.wins / matchup.total) * 100)}%` }}
+          />
+        </div>
+      )}
 
       <section className="matchup-card">
         <h3>Next focus</h3>
@@ -407,9 +487,13 @@ function MatchupPanel({
                 <span className="set-date">{formatDate(set.date)}</span>
               </div>
               {set.lossTags && set.lossTags.length > 0 && (
-                <p className="set-tags">
-                  {set.lossTags.map(labelForLossTag).join(' · ')}
-                </p>
+                <div className="set-tags">
+                  {set.lossTags.map((tag) => (
+                    <span key={tag} className="loss-tag-badge">
+                      {labelForLossTag(tag)}
+                    </span>
+                  ))}
+                </div>
               )}
               {set.notes && <p className="set-notes">{set.notes}</p>}
               <button
