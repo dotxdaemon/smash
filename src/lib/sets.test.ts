@@ -1,7 +1,7 @@
 // ABOUTME: Verifies set-entry creation rules and history filtering.
 // ABOUTME: Keeps entry canonicalization and filters independent from the views.
 import { describe, expect, it } from 'vitest'
-import { createSetEntry, filterSets } from './sets'
+import { buildSetsBackup, createSetEntry, filterSets } from './sets'
 import type { SetEntry } from '../types'
 
 describe('createSetEntry', () => {
@@ -103,5 +103,23 @@ describe('filterSets', () => {
 
   it('preserves input order', () => {
     expect(filterSets(sets, {}).map((s) => s.id)).toEqual(['1', '2', '3'])
+  })
+})
+
+describe('buildSetsBackup', () => {
+  const sets: SetEntry[] = [
+    {
+      id: '1',
+      date: '2026-01-01T00:00:00.000Z',
+      opponent: 'Fox',
+      result: 'win',
+    },
+  ]
+
+  it('names the file with the calendar day and serializes the sets', () => {
+    const backup = buildSetsBackup(sets, '2026-06-18T15:04:00.000Z')
+
+    expect(backup.filename).toBe('smash-tracker-2026-06-18.json')
+    expect(JSON.parse(backup.json)).toEqual(sets)
   })
 })

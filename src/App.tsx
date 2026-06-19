@@ -10,7 +10,7 @@ import { StatsView } from './components/StatsView'
 import { MatchupPanel } from './components/MatchupPanel'
 import { Toast, type ToastData } from './components/Toast'
 import { useSets } from './hooks/useSets'
-import { createSetEntry, type SetEntryInput } from './lib/sets'
+import { buildSetsBackup, createSetEntry, type SetEntryInput } from './lib/sets'
 import { getMatchupSummary, getNextSetFocus } from './lib/training'
 import { getOpponentRecords, getOverallRecord, getRecentForm } from './lib/stats'
 import type { SetEntry } from './types'
@@ -95,6 +95,16 @@ function App() {
     addSet(createSetEntry(input))
   }
 
+  function exportSets() {
+    const { filename, json } = buildSetsBackup(sets, new Date().toISOString())
+    const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   function deleteSet(id: string) {
     const removed = sets.find((set) => set.id === id)
     if (!removed) return
@@ -127,7 +137,19 @@ function App() {
               <span className="brand-kicker">Palutena training log</span>
               <h1 className="brand-title">Smash Tracker</h1>
             </div>
-            <Scoreboard record={overallRecord} form={recentForm} />
+            <div className="header-aside">
+              <Scoreboard record={overallRecord} form={recentForm} />
+              {sets.length > 0 && (
+                <button
+                  type="button"
+                  className="export-action"
+                  onClick={exportSets}
+                  aria-label="Export all sets as a JSON backup"
+                >
+                  ↓ Export backup
+                </button>
+              )}
+            </div>
           </header>
 
           <NavTabs tabs={TABS} active={view} label="Views" onChange={selectView} />

@@ -41,6 +41,16 @@ export function createSetEntry({
   return entry
 }
 
+export function buildSetsBackup(
+  sets: SetEntry[],
+  isoDate: string,
+): { filename: string; json: string } {
+  return {
+    filename: `smash-tracker-${isoDate.slice(0, 10)}.json`,
+    json: JSON.stringify(sets, null, 2),
+  }
+}
+
 export function filterSets(sets: SetEntry[], filter: SetFilter): SetEntry[] {
   const query = filter.query?.trim().toLowerCase() ?? ''
   const result = filter.result ?? 'all'
