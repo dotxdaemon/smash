@@ -236,3 +236,13 @@
 - Verification: `npm run typecheck`, `npm run lint`, `npm test` (33 passed), `npm run build`, and `npm run build -- --base=/smash/` all passed; verified log/history/stats/matchup at 1280x900 and the log screen at 390x844 in-browser, with tab state checked via computed styles (downscaled screenshots were misleading). No console errors. Committed to main as 82cb492.
 - Push reconciliation: `origin/main` had diverged with a parallel Claude session's commit `d566a42` ("Visual refresh and usability improvements"), touching only the two files this rebuild rewrote. Sean chose to ship this rebuild but port the one feature it lacked: a JSON backup export. Added a pure `buildSetsBackup(sets, isoDate)` in `lib/sets.ts` (filename + serialized json, unit-tested) and a subtle header "Export backup" control that downloads via a Blob, then merged `origin/main` keeping this rebuild's versions of `App.tsx`/`index.css` (d566a42 stays in history, superseded). The parallel commit's inline-last-3-on-log was intentionally not ported.
 - Verification: `npm run typecheck`, `npm run lint`, `npm test` (34 passed), `npm run build`, and `npm run build -- --base=/smash/` all passed; the export button was confirmed in-browser to download `smash-tracker-<date>.json` with no console errors.
+
+## 2026-06-22
+
+- Request: Add `/Users/seankim/Desktop/seraph-notes.pdf` somewhere in the app for quick reference.
+- What I tried last: The tracker had log, history, and stats views, but no deployable training-reference surface; the supplied PDF was image-based and had no extractable text.
+- Attempt: Rendered and read both supplied PDF pages, added a source-backed Notes tab with the title, review statement, and all ten numbered notes, and added failing-first render coverage for the reference markers.
+- Error after I tried: The first targeted test failed because `ReferenceView` did not exist; it passed after the source data and view were added. The in-app browser screenshot capture timed out, so a local existing Chromium-based browser was used for the 390x844 proof without downloading software.
+- Result: The Seraph Notes can be referenced directly in the app without bundling a PDF binary, so the feature works on GitHub Pages and Vercel while leaving set storage and the service worker unchanged.
+- Verification: `npm test -- src/components/ReferenceView.test.tsx src/App.test.tsx`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, and `npm run build -- --base=/smash/` passed. The Notes tab was verified at 390x844.
+- Unrelated observation: the local browser requested `/favicon.ico` and received a 404; this existing asset issue was not changed as part of the reference feature.

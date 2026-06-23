@@ -8,6 +8,7 @@ import { LogForm } from './components/LogForm'
 import { HistoryView } from './components/HistoryView'
 import { StatsView } from './components/StatsView'
 import { MatchupPanel } from './components/MatchupPanel'
+import { ReferenceView } from './components/ReferenceView'
 import { Toast, type ToastData } from './components/Toast'
 import { useSets } from './hooks/useSets'
 import { buildSetsBackup, createSetEntry, type SetEntryInput } from './lib/sets'
@@ -15,12 +16,13 @@ import { getMatchupSummary, getNextSetFocus } from './lib/training'
 import { getOpponentRecords, getOverallRecord, getRecentForm } from './lib/stats'
 import type { SetEntry } from './types'
 
-type View = 'log' | 'history' | 'stats'
+type View = 'log' | 'history' | 'stats' | 'notes'
 
 const TABS: ReadonlyArray<{ id: View; label: string }> = [
   { id: 'log', label: 'Log set' },
   { id: 'history', label: 'History' },
   { id: 'stats', label: 'Stats' },
+  { id: 'notes', label: 'Notes' },
 ]
 
 const UNDO_DURATION = 7000
@@ -195,6 +197,8 @@ function App() {
                 onLog={() => selectView('log')}
               />
             )}
+
+            {view === 'notes' && <ReferenceView />}
           </main>
         </div>
       </div>

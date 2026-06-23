@@ -20,6 +20,7 @@ describe('App shell', () => {
     expect(html).toContain('role="tablist"')
     expect(html).toContain('aria-label="Views"')
     expect(html).toContain('role="tabpanel"')
+    expect(html).toContain('Notes')
   })
 
   it('renders Palutena as the only player character on the log screen', () => {

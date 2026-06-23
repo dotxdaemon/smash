@@ -776,6 +776,96 @@
     background: var(--color-cyan);
   }
 
+  .reference {
+    display: grid;
+  }
+
+  .reference-header {
+    display: grid;
+    gap: 0.7rem;
+    padding-bottom: 1.4rem;
+    border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  }
+
+  .reference-subtitle {
+    color: var(--color-text-faint);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .reference-title {
+    font-family: var(--font-display);
+    color: var(--color-text);
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+
+  .reference-summary {
+    max-width: 42rem;
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .reference-list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .reference-note {
+    display: grid;
+    gap: 0.7rem;
+    padding: 1.4rem 0;
+    border-bottom: 1px solid rgb(255 255 255 / 0.07);
+  }
+
+  .reference-note:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .reference-note-title {
+    display: flex;
+    gap: 0.5rem;
+    color: var(--color-cyan);
+    font-family: var(--font-sans);
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .reference-number {
+    flex: 0 0 auto;
+    color: var(--color-cyan-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .reference-focus {
+    color: var(--color-text);
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  .reference-points {
+    display: grid;
+    gap: 0.55rem;
+    margin: 0;
+    padding-left: 1.15rem;
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    line-height: 1.55;
+  }
+
+  .reference-points li::marker {
+    color: var(--color-cyan-dim);
+  }
+
   /* ---- Matchup ------------------------------------------------------- */
 
   .matchup {
