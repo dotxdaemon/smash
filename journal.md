@@ -246,3 +246,12 @@
 - Result: The Seraph Notes can be referenced directly in the app without bundling a PDF binary, so the feature works on GitHub Pages and Vercel while leaving set storage and the service worker unchanged.
 - Verification: `npm test -- src/components/ReferenceView.test.tsx src/App.test.tsx`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, and `npm run build -- --base=/smash/` passed. The Notes tab was verified at 390x844.
 - Unrelated observation: the local browser requested `/favicon.ico` and received a 404; this existing asset issue was not changed as part of the reference feature.
+
+## 2026-06-25
+
+- Request: Find and fix a real bug in the tracker without introducing regressions.
+- What I tried last: The 2026-06-22 reference pass flagged the `/favicon.ico` 404 as an unrelated observation and intentionally left it unfixed.
+- Attempt: Confirmed `index.html` ships no `<link rel="icon">` (true on both `main` and the rebuild) while `public/vite.svg` sits unreferenced, so the document declares no favicon and the browser falls back to a missing `/favicon.ico`. Added a failing-first regression test (`src/favicon.test.ts`) that reads the icon link from `index.html` and asserts the referenced file exists in `public/`, then added an on-brand `public/favicon.svg` (neon cyan bolt on the `#070a0c` surface) and wired `<link rel="icon" type="image/svg+xml" href="/favicon.svg" />`.
+- Error: The first test used `node:fs`/`node:url`, which passed under vitest but failed `tsc -b` because `tsconfig.app.json` restricts `types` to `vite/client`; rewrote it with `import '../index.html?raw'` and `import.meta.glob('../public/*')`, which typecheck cleanly.
+- Result: The document now declares a favicon that exists, removing the `/favicon.ico` 404 and giving the app a real browser-tab icon; Vite rebases the href correctly under a subpath build (`/smash/favicon.svg`).
+- Verification: The new test failed before the fix and passes after; `npm test` (36 passed), `npm run typecheck`, `npm run lint`, `npm run build`, and `npm run build -- --base=/smash/` all passed; rendered the favicon at 16/32/64px with the pre-installed Chromium to confirm it displays as a cyan bolt on dark.
