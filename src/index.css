@@ -262,6 +262,15 @@
     color: var(--color-cyan);
   }
 
+  .score-value.is-streak-win {
+    color: var(--color-cyan-bright);
+    text-shadow: 0 0 0.9em rgb(79 227 209 / 0.35);
+  }
+
+  .score-value.is-streak-loss {
+    color: var(--color-vermilion-bright);
+  }
+
   .score-label {
     color: var(--color-text-faint);
     font-size: 0.62rem;
@@ -341,9 +350,17 @@
 
   .focus-panel {
     display: grid;
-    gap: 0.45rem;
-    padding-left: 1.1rem;
-    border-left: 1px solid color-mix(in srgb, var(--color-cyan) 45%, transparent);
+    gap: 0.55rem;
+    padding: 1.15rem 1.3rem 1.25rem;
+    border: 1px solid color-mix(in srgb, var(--color-cyan) 18%, transparent);
+    border-left: 2px solid color-mix(in srgb, var(--color-cyan) 70%, transparent);
+    border-radius: 0.7rem;
+    background: linear-gradient(
+      135deg,
+      rgb(79 227 209 / 0.09),
+      rgb(79 227 209 / 0.025) 55%,
+      transparent
+    );
   }
 
   .focus-kicker {
@@ -359,6 +376,39 @@
     font-size: 1.1rem;
     font-weight: 400;
     line-height: 1.5;
+  }
+
+  .focus-drills {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem 1.1rem;
+    margin-top: 0.3rem;
+  }
+
+  .focus-drills-label {
+    color: var(--color-text-faint);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .focus-drill {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    padding: 0.15rem 0;
+    border-bottom: 1px solid rgb(255 255 255 / 0.16);
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .focus-drill:hover {
+    color: var(--color-cyan-bright);
+    border-bottom-color: var(--color-cyan);
   }
 
   .field-pair {
@@ -513,20 +563,22 @@
   .submit-action {
     justify-self: start;
     min-height: 3rem;
-    padding: 0 2rem;
-    border: 1px solid color-mix(in srgb, var(--color-cyan) 55%, transparent);
-    border-radius: 0.5rem;
-    background: rgb(79 227 209 / 0.1);
+    padding: 0 2.4rem;
+    border: 1px solid color-mix(in srgb, var(--color-cyan) 60%, transparent);
+    border-radius: 0.55rem;
+    background: linear-gradient(180deg, rgb(79 227 209 / 0.22), rgb(79 227 209 / 0.1));
     color: var(--color-cyan-bright);
     font-size: 0.92rem;
     font-weight: 600;
     letter-spacing: 0.04em;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    box-shadow: 0 0 1.6rem rgb(79 227 209 / 0.1);
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
   .submit-action:hover {
-    background: rgb(79 227 209 / 0.18);
+    background: linear-gradient(180deg, rgb(79 227 209 / 0.3), rgb(79 227 209 / 0.16));
     border-color: var(--color-cyan);
+    box-shadow: 0 0 2rem rgb(79 227 209 / 0.18);
   }
 
   /* ---- History controls --------------------------------------------- */
@@ -706,6 +758,57 @@
   }
 
   /* ---- Stats --------------------------------------------------------- */
+
+  .habit-strip {
+    margin-bottom: clamp(1.6rem, 3.2vw, 2.1rem);
+    padding: 1.05rem 1.3rem 1.15rem;
+    border: 1px solid color-mix(in srgb, var(--color-vermilion) 18%, transparent);
+    border-left: 2px solid color-mix(in srgb, var(--color-vermilion) 60%, transparent);
+    border-radius: 0.7rem;
+    background: linear-gradient(135deg, rgb(233 105 91 / 0.07), transparent 60%);
+  }
+
+  .habit-title {
+    margin-bottom: 0.8rem;
+    color: var(--color-vermilion-bright);
+    font-family: var(--font-sans);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .habit-list {
+    display: grid;
+    gap: 0.55rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .habit-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .habit-label {
+    color: var(--color-text);
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  .habit-count {
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .habit-recent {
+    color: var(--color-text-faint);
+  }
 
   .stats-list {
     display: grid;

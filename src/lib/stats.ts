@@ -40,6 +40,24 @@ export function getRecentForm(
     .map((set) => set.result)
 }
 
+export type Streak = {
+  result: 'win' | 'loss'
+  length: number
+}
+
+export function getCurrentStreak(sets: SetEntry[]): Streak | null {
+  const ordered = [...sets].sort((a, b) => b.date.localeCompare(a.date))
+  if (ordered.length === 0) return null
+
+  const result = ordered[0].result
+  let length = 0
+  for (const set of ordered) {
+    if (set.result !== result) break
+    length += 1
+  }
+  return { result, length }
+}
+
 function toRecord(sets: SetEntry[]): WinLossRecord {
   let wins = 0
   let losses = 0

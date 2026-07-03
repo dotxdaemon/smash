@@ -9,9 +9,15 @@ type MatchupPanelProps = {
   matchup: MatchupSummary
   onBack: () => void
   onDelete: (id: string) => void
+  onOpenNotes: () => void
 }
 
-export function MatchupPanel({ matchup, onBack, onDelete }: MatchupPanelProps) {
+export function MatchupPanel({
+  matchup,
+  onBack,
+  onDelete,
+  onOpenNotes,
+}: MatchupPanelProps) {
   const backRef = useRef<HTMLButtonElement>(null)
   const winRate = matchup.total > 0 ? matchup.wins / matchup.total : null
   const rate = formatWinRate(winRate)
@@ -39,6 +45,22 @@ export function MatchupPanel({ matchup, onBack, onDelete }: MatchupPanelProps) {
         <section className="matchup-card">
           <h3>Next focus</h3>
           <p>{matchup.focus.detail}</p>
+          {matchup.focus.drills && matchup.focus.drills.length > 0 && (
+            <div className="focus-drills">
+              <span className="focus-drills-label">Drills</span>
+              {matchup.focus.drills.map((drill) => (
+                <button
+                  key={drill.title}
+                  type="button"
+                  className="focus-drill"
+                  onClick={onOpenNotes}
+                  aria-label={`Open Seraph Notes: ${drill.title}`}
+                >
+                  {drill.title} <span aria-hidden="true">→</span>
+                </button>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="matchup-card">

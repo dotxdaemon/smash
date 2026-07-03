@@ -12,8 +12,13 @@ import { ReferenceView } from './components/ReferenceView'
 import { Toast, type ToastData } from './components/Toast'
 import { useSets } from './hooks/useSets'
 import { buildSetsBackup, createSetEntry, type SetEntryInput } from './lib/sets'
-import { getMatchupSummary, getNextSetFocus } from './lib/training'
-import { getOpponentRecords, getOverallRecord, getRecentForm } from './lib/stats'
+import { getLossHabits, getMatchupSummary, getNextSetFocus } from './lib/training'
+import {
+  getCurrentStreak,
+  getOpponentRecords,
+  getOverallRecord,
+  getRecentForm,
+} from './lib/stats'
 import type { SetEntry } from './types'
 
 type View = 'log' | 'history' | 'stats' | 'notes'
@@ -27,13 +32,17 @@ const TABS: ReadonlyArray<{ id: View; label: string }> = [
 
 const UNDO_DURATION = 7000
 
+type UndoableAction =
+  | { kind: 'restore'; entry: SetEntry }
+  | { kind: 'remove'; id: string }
+
 function App() {
   const { sets, addSet, removeSet, storageError } = useSets()
   const [view, setView] = useState<View>('log')
   const [selectedOpponent, setSelectedOpponent] = useState<string | null>(null)
   const [toast, setToast] = useState<ToastData | null>(null)
   const [toastPaused, setToastPaused] = useState(false)
-  const undoableSet = useRef<SetEntry | null>(null)
+  const undoable = useRef<UndoableAction | null>(null)
   const workspaceRef = useRef<HTMLElement>(null)
   const restoreFocusToWorkspace = useRef(false)
 
@@ -43,7 +52,9 @@ function App() {
   )
   const overallRecord = useMemo(() => getOverallRecord(sets), [sets])
   const recentForm = useMemo(() => getRecentForm(sets), [sets])
+  const streak = useMemo(() => getCurrentStreak(sets), [sets])
   const opponentRecords = useMemo(() => getOpponentRecords(sets), [sets])
+  const lossHabits = useMemo(() => getLossHabits(sets), [sets])
   const nextFocus = useMemo(() => getNextSetFocus(sortedSets), [sortedSets])
   const matchup = useMemo(() => {
     if (!selectedOpponent) return null
@@ -55,7 +66,7 @@ function App() {
     if (!toast || toastPaused) return
     const timer = window.setTimeout(() => {
       setToast(null)
-      undoableSet.current = null
+      undoable.current = null
     }, UNDO_DURATION)
     return () => window.clearTimeout(timer)
   }, [toast, toastPaused])
@@ -94,7 +105,16 @@ function App() {
   }
 
   function logSet(input: SetEntryInput) {
-    addSet(createSetEntry(input))
+    const entry = createSetEntry(input)
+    addSet(entry)
+    undoable.current = { kind: 'remove', id: entry.id }
+    setToastPaused(false)
+    setToast({
+      id: Date.now(),
+      message: `${entry.result === 'win' ? 'Win' : 'Loss'} vs ${entry.opponent} saved.`,
+      actionLabel: 'Undo',
+      focusAction: false,
+    })
   }
 
   function exportSets() {
@@ -111,15 +131,17 @@ function App() {
     const removed = sets.find((set) => set.id === id)
     if (!removed) return
     removeSet(id)
-    undoableSet.current = removed
+    undoable.current = { kind: 'restore', entry: removed }
     setToastPaused(false)
     setToast({ id: Date.now(), message: 'Set deleted.', actionLabel: 'Undo' })
   }
 
-  function undoDelete() {
-    if (undoableSet.current) {
-      addSet(undoableSet.current)
-      undoableSet.current = null
+  function undoLastAction() {
+    const action = undoable.current
+    if (action) {
+      if (action.kind === 'restore') addSet(action.entry)
+      else removeSet(action.id)
+      undoable.current = null
     }
     setToast(null)
     workspaceRef.current?.focus()
@@ -140,7 +162,7 @@ function App() {
               <h1 className="brand-title">Smash Tracker</h1>
             </div>
             <div className="header-aside">
-              <Scoreboard record={overallRecord} form={recentForm} />
+              <Scoreboard record={overallRecord} form={recentForm} streak={streak} />
               {sets.length > 0 && (
                 <button
                   type="button"
@@ -172,7 +194,13 @@ function App() {
             aria-labelledby={`tab-${view}`}
             tabIndex={-1}
           >
-            {view === 'log' && <LogForm focus={nextFocus} onSubmit={logSet} />}
+            {view === 'log' && (
+              <LogForm
+                focus={nextFocus}
+                onSubmit={logSet}
+                onOpenNotes={() => selectView('notes')}
+              />
+            )}
 
             {view === 'history' &&
               (matchup ? (
@@ -180,6 +208,7 @@ function App() {
                   matchup={matchup}
                   onBack={closeMatchup}
                   onDelete={deleteSet}
+                  onOpenNotes={() => selectView('notes')}
                 />
               ) : (
                 <HistoryView
@@ -193,6 +222,7 @@ function App() {
             {view === 'stats' && (
               <StatsView
                 records={opponentRecords}
+                habits={lossHabits}
                 onOpenOpponent={openMatchup}
                 onLog={() => selectView('log')}
               />
@@ -205,7 +235,7 @@ function App() {
 
       <Toast
         toast={toast}
-        onAction={undoDelete}
+        onAction={undoLastAction}
         onPause={() => setToastPaused(true)}
         onResume={() => setToastPaused(false)}
       />

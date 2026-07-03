@@ -1,11 +1,12 @@
 // ABOUTME: Renders a transient toast with an action inside a persistent polite live region.
-// ABOUTME: Moves focus to the action on open and pauses dismissal while hovered or focused.
+// ABOUTME: Moves focus to the action on open unless the toast opts out; pauses while hovered.
 import { useEffect, useRef } from 'react'
 
 export type ToastData = {
   id: number
   message: string
   actionLabel: string
+  focusAction?: boolean
 }
 
 type ToastProps = {
@@ -17,11 +18,10 @@ type ToastProps = {
 
 export function Toast({ toast, onAction, onPause, onResume }: ToastProps) {
   const actionRef = useRef<HTMLButtonElement>(null)
-  const toastId = toast?.id
 
   useEffect(() => {
-    if (toastId !== undefined) actionRef.current?.focus()
-  }, [toastId])
+    if (toast && toast.focusAction !== false) actionRef.current?.focus()
+  }, [toast])
 
   return (
     <div className="toast-tray" role="status" aria-live="polite">
