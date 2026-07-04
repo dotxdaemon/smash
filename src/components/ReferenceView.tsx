@@ -4,6 +4,8 @@ import {
   SERAPH_NOTES,
   SERAPH_NOTES_SUBTITLE,
   SERAPH_NOTES_SUMMARY,
+  SMASH_FUNDAMENTALS_REMINDER,
+  SMASH_PEOPLE_NOTES,
 } from '../data/seraphNotes'
 
 export function ReferenceView() {
@@ -16,6 +18,29 @@ export function ReferenceView() {
         </h2>
         <p className="reference-summary">{SERAPH_NOTES_SUMMARY}</p>
       </header>
+
+      <div className="reference-list">
+        <section className="reference-note" aria-labelledby="people-notes-title">
+          <h3 id="people-notes-title" className="reference-note-title">
+            Playing against other people
+          </h3>
+          <ul className="reference-points">
+            {SMASH_PEOPLE_NOTES.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        </section>
+
+        <section
+          className="reference-note"
+          aria-labelledby="smash-fundamentals-title"
+        >
+          <h3 id="smash-fundamentals-title" className="reference-note-title">
+            Smash Fundamentals
+          </h3>
+          <p className="reference-focus">{SMASH_FUNDAMENTALS_REMINDER}</p>
+        </section>
+      </div>
 
       <ol className="reference-list">
         {SERAPH_NOTES.map((note, index) => (
