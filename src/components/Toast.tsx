@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react'
 export type ToastData = {
   id: number
   message: string
-  actionLabel: string
+  actionLabel?: string
 }
 
 type ToastProps = {
@@ -35,14 +35,16 @@ export function Toast({ toast, onAction, onPause, onResume }: ToastProps) {
           onBlur={onResume}
         >
           <span>{toast.message}</span>
-          <button
-            ref={actionRef}
-            type="button"
-            className="toast-action"
-            onClick={onAction}
-          >
-            {toast.actionLabel}
-          </button>
+          {toast.actionLabel && (
+            <button
+              ref={actionRef}
+              type="button"
+              className="toast-action"
+              onClick={onAction}
+            >
+              {toast.actionLabel}
+            </button>
+          )}
         </div>
       )}
     </div>

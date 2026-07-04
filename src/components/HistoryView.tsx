@@ -31,7 +31,6 @@ export function HistoryView({
   if (sets.length === 0) {
     return (
       <EmptyState
-        glyph="戦"
         title="No sets yet"
         text="Log your first set to start building your record and matchup notes."
         actionLabel="Log a set"

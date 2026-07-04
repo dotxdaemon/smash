@@ -5,10 +5,10 @@ import { describe, expect, it } from 'vitest'
 import App from './App'
 
 describe('App shell', () => {
-  it('renders the compact training ledger system without generic card chrome', () => {
+  it('renders the night console system without generic card chrome', () => {
     const html = renderToStaticMarkup(<App />)
 
-    expect(html).toContain('data-visual-system="training-ledger"')
+    expect(html).toContain('data-visual-system="night-console"')
     expect(html).toContain('data-layout="compact-workspace"')
     expect(html).not.toContain('data-ink-stroke')
     expect(html).not.toContain('rounded-xl')
@@ -20,7 +20,15 @@ describe('App shell', () => {
     expect(html).toContain('role="tablist"')
     expect(html).toContain('aria-label="Views"')
     expect(html).toContain('role="tabpanel"')
-    expect(html).toContain('Notes')
+    expect(html).toContain('Reference')
+  })
+
+  it('keeps decorative glyph chrome out of the shell', () => {
+    const html = renderToStaticMarkup(<App />)
+
+    expect(html).not.toContain('neon-sign')
+    expect(html).not.toContain('neon-rain')
+    expect(html).not.toContain('戦')
   })
 
   it('renders Palutena as the only player character on the log screen', () => {

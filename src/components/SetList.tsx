@@ -17,10 +17,12 @@ export function SetList({ sets, onDelete, onOpenOpponent }: SetListProps) {
           <div className="set-row-head">
             <div className="set-summary">
               <span
-                className={`result-dot is-${set.result}`}
+                className={`result-badge is-${set.result}`}
                 role="img"
                 aria-label={set.result === 'win' ? 'Win' : 'Loss'}
-              />
+              >
+                {set.result === 'win' ? 'W' : 'L'}
+              </span>
               {onOpenOpponent ? (
                 <button
                   type="button"

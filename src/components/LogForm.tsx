@@ -50,7 +50,10 @@ export function LogForm({ focus, onSubmit }: LogFormProps) {
   return (
     <form className="log-form" onSubmit={handleSubmit} noValidate>
       <section aria-label="Next set focus" className="focus-panel">
-        <span className="focus-kicker">{focus.tagLabel ?? 'Next set focus'}</span>
+        <div className="focus-head">
+          <span className="focus-kicker">{focus.title}</span>
+          {focus.tagLabel && <span className="focus-tag">{focus.tagLabel}</span>}
+        </div>
         <p className="focus-copy">{focus.detail}</p>
       </section>
 
@@ -108,7 +111,7 @@ export function LogForm({ focus, onSubmit }: LogFormProps) {
 
       {result === 'loss' && (
         <fieldset>
-          <legend className="control-legend">Loss tags</legend>
+          <legend className="control-legend">What went wrong?</legend>
           <div className="tag-grid">
             {LOSS_TAGS.map((tag) => (
               <button

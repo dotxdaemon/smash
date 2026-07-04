@@ -7,11 +7,17 @@ import type { MatchupSummary } from '../lib/training'
 
 type MatchupPanelProps = {
   matchup: MatchupSummary
+  backLabel: string
   onBack: () => void
   onDelete: (id: string) => void
 }
 
-export function MatchupPanel({ matchup, onBack, onDelete }: MatchupPanelProps) {
+export function MatchupPanel({
+  matchup,
+  backLabel,
+  onBack,
+  onDelete,
+}: MatchupPanelProps) {
   const backRef = useRef<HTMLButtonElement>(null)
   const winRate = matchup.total > 0 ? matchup.wins / matchup.total : null
   const rate = formatWinRate(winRate)
@@ -23,7 +29,7 @@ export function MatchupPanel({ matchup, onBack, onDelete }: MatchupPanelProps) {
   return (
     <section className="matchup" aria-label={`Matchup versus ${matchup.opponent}`}>
       <button ref={backRef} type="button" className="back-action" onClick={onBack}>
-        ← Back to history
+        ← {backLabel}
       </button>
 
       <header className="matchup-header">

@@ -22,10 +22,10 @@ const TABS: ReadonlyArray<{ id: View; label: string }> = [
   { id: 'log', label: 'Log set' },
   { id: 'history', label: 'History' },
   { id: 'stats', label: 'Stats' },
-  { id: 'notes', label: 'Notes' },
+  { id: 'notes', label: 'Reference' },
 ]
 
-const UNDO_DURATION = 7000
+const TOAST_DURATION = 7000
 
 function App() {
   const { sets, addSet, removeSet, storageError } = useSets()
@@ -56,7 +56,7 @@ function App() {
     const timer = window.setTimeout(() => {
       setToast(null)
       undoableSet.current = null
-    }, UNDO_DURATION)
+    }, TOAST_DURATION)
     return () => window.clearTimeout(timer)
   }, [toast, toastPaused])
 
@@ -80,12 +80,11 @@ function App() {
 
   function selectView(nextView: View) {
     setView(nextView)
-    if (nextView !== 'history') setSelectedOpponent(null)
+    setSelectedOpponent(null)
   }
 
   function openMatchup(opponent: string) {
     setSelectedOpponent(opponent)
-    setView('history')
   }
 
   function closeMatchup() {
@@ -94,7 +93,11 @@ function App() {
   }
 
   function logSet(input: SetEntryInput) {
-    addSet(createSetEntry(input))
+    const entry = createSetEntry(input)
+    addSet(entry)
+    undoableSet.current = null
+    setToastPaused(false)
+    setToast({ id: Date.now(), message: `Set logged — vs ${entry.opponent}` })
   }
 
   function exportSets() {
@@ -129,7 +132,7 @@ function App() {
     <>
       <NeonBackdrop />
       <div
-        data-visual-system="training-ledger"
+        data-visual-system="night-console"
         data-layout="compact-workspace"
         className="app-shell"
       >
@@ -172,33 +175,37 @@ function App() {
             aria-labelledby={`tab-${view}`}
             tabIndex={-1}
           >
-            {view === 'log' && <LogForm focus={nextFocus} onSubmit={logSet} />}
-
-            {view === 'history' &&
-              (matchup ? (
-                <MatchupPanel
-                  matchup={matchup}
-                  onBack={closeMatchup}
-                  onDelete={deleteSet}
-                />
-              ) : (
-                <HistoryView
-                  sets={sortedSets}
-                  onOpenOpponent={openMatchup}
-                  onDelete={deleteSet}
-                  onLog={() => selectView('log')}
-                />
-              ))}
-
-            {view === 'stats' && (
-              <StatsView
-                records={opponentRecords}
-                onOpenOpponent={openMatchup}
-                onLog={() => selectView('log')}
+            {matchup ? (
+              <MatchupPanel
+                matchup={matchup}
+                backLabel={view === 'stats' ? 'Back to stats' : 'Back to history'}
+                onBack={closeMatchup}
+                onDelete={deleteSet}
               />
-            )}
+            ) : (
+              <>
+                {view === 'log' && <LogForm focus={nextFocus} onSubmit={logSet} />}
 
-            {view === 'notes' && <ReferenceView />}
+                {view === 'history' && (
+                  <HistoryView
+                    sets={sortedSets}
+                    onOpenOpponent={openMatchup}
+                    onDelete={deleteSet}
+                    onLog={() => selectView('log')}
+                  />
+                )}
+
+                {view === 'stats' && (
+                  <StatsView
+                    records={opponentRecords}
+                    onOpenOpponent={openMatchup}
+                    onLog={() => selectView('log')}
+                  />
+                )}
+
+                {view === 'notes' && <ReferenceView />}
+              </>
+            )}
           </main>
         </div>
       </div>

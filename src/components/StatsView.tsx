@@ -14,7 +14,6 @@ export function StatsView({ records, onOpenOpponent, onLog }: StatsViewProps) {
   if (records.length === 0) {
     return (
       <EmptyState
-        glyph="績"
         title="No stats yet"
         text="Your win rate and matchup breakdown appear here once you log sets."
         actionLabel="Log a set"
