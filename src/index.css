@@ -1266,8 +1266,9 @@
     }
 
     .view-tab {
-      padding: 0.7rem 0.6rem;
+      padding: 0.7rem 0.2rem;
       font-size: 0.9rem;
+      white-space: nowrap;
     }
 
     .field-pair {

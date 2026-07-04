@@ -8,6 +8,7 @@ import { LogForm } from './components/LogForm'
 import { HistoryView } from './components/HistoryView'
 import { StatsView } from './components/StatsView'
 import { MatchupPanel } from './components/MatchupPanel'
+import { NotesView } from './components/NotesView'
 import { ReferenceView } from './components/ReferenceView'
 import { Toast, type ToastData } from './components/Toast'
 import { useSets } from './hooks/useSets'
@@ -21,13 +22,14 @@ import {
 } from './lib/stats'
 import type { SetEntry } from './types'
 
-type View = 'log' | 'history' | 'stats' | 'notes'
+type View = 'log' | 'history' | 'stats' | 'notes' | 'reference'
 
 const TABS: ReadonlyArray<{ id: View; label: string }> = [
   { id: 'log', label: 'Log set' },
   { id: 'history', label: 'History' },
   { id: 'stats', label: 'Stats' },
-  { id: 'notes', label: 'Reference' },
+  { id: 'notes', label: 'Notes' },
+  { id: 'reference', label: 'Reference' },
 ]
 
 const TOAST_DURATION = 7000
@@ -199,7 +201,7 @@ function App() {
                 backLabel={view === 'stats' ? 'Back to stats' : 'Back to history'}
                 onBack={closeMatchup}
                 onDelete={deleteSet}
-                onOpenNotes={() => selectView('notes')}
+                onOpenNotes={() => selectView('reference')}
               />
             ) : (
               <>
@@ -207,7 +209,7 @@ function App() {
                   <LogForm
                     focus={nextFocus}
                     onSubmit={logSet}
-                    onOpenNotes={() => selectView('notes')}
+                    onOpenNotes={() => selectView('reference')}
                   />
                 )}
 
@@ -229,7 +231,9 @@ function App() {
                   />
                 )}
 
-                {view === 'notes' && <ReferenceView />}
+                {view === 'notes' && <NotesView />}
+
+                {view === 'reference' && <ReferenceView />}
               </>
             )}
           </main>

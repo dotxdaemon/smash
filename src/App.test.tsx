@@ -20,6 +20,9 @@ describe('App shell', () => {
     expect(html).toContain('role="tablist"')
     expect(html).toContain('aria-label="Views"')
     expect(html).toContain('role="tabpanel"')
+    expect(html).toContain('id="tab-notes"')
+    expect(html).toContain('>Notes</button>')
+    expect(html).toContain('id="tab-reference"')
     expect(html).toContain('Reference')
   })
 

@@ -14,15 +14,6 @@ export const SERAPH_NOTES_SUBTITLE = 'Palutena matchup and gameplay adjustments'
 export const SERAPH_NOTES_SUMMARY =
   'Use this as a quick review sheet before sets: prioritize safer advantage pressure, cleaner ledge spacing, broader disadvantage mix-ups, and better resource awareness.'
 
-export const SMASH_PEOPLE_NOTES: ReadonlyArray<string> = [
-  'Josh - Stay patient, look for options rather than commitments. Stay outside the triangle',
-  'Kipum - Play at my own pace, don’t let his punish game scare me from playing the game. Play neutral more grounded, observe what he does out of shield (drift-back, aerial, grab, etc.)',
-  '6/23 - Avoid setups, watch for habits. Stay outside the triangle. Don’t commit too much',
-]
-
-export const SMASH_FUNDAMENTALS_REMINDER =
-  'Play NEUTRAL, ADVANTAGE AND DISADVANTAGE deliberately. Don’t just rush in/mash buttons/hope to kill them. Have a plan for what the opponent is showing you. Gather data.'
-
 export const SERAPH_NOTES: ReadonlyArray<SeraphNote> = [
   {
     title: 'Up air advantage state',
