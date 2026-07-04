@@ -1,7 +1,12 @@
 // ABOUTME: Verifies overall record, per-opponent records, and recent form math.
 // ABOUTME: Keeps win-rate and scoreboard summaries independent from the views.
 import { describe, expect, it } from 'vitest'
-import { getOpponentRecords, getOverallRecord, getRecentForm } from './stats'
+import {
+  getCurrentStreak,
+  getOpponentRecords,
+  getOverallRecord,
+  getRecentForm,
+} from './stats'
 import type { SetEntry } from '../types'
 
 function set(partial: Partial<SetEntry> & Pick<SetEntry, 'result'>): SetEntry {
@@ -108,5 +113,31 @@ describe('getRecentForm', () => {
     ]
 
     expect(getRecentForm(sets)).toEqual(['win', 'loss'])
+  })
+})
+
+describe('getCurrentStreak', () => {
+  it('returns null with no sets', () => {
+    expect(getCurrentStreak([])).toBeNull()
+  })
+
+  it('counts consecutive results from the most recent set regardless of input order', () => {
+    const sets = [
+      set({ result: 'loss', date: '2026-01-01T00:00:00.000Z' }),
+      set({ result: 'win', date: '2026-01-03T00:00:00.000Z' }),
+      set({ result: 'win', date: '2026-01-02T00:00:00.000Z' }),
+    ]
+
+    expect(getCurrentStreak(sets)).toEqual({ result: 'win', length: 2 })
+  })
+
+  it('reports a loss streak covering every set when nothing breaks it', () => {
+    const sets = [
+      set({ result: 'loss', date: '2026-01-01T00:00:00.000Z' }),
+      set({ result: 'loss', date: '2026-01-02T00:00:00.000Z' }),
+      set({ result: 'loss', date: '2026-01-03T00:00:00.000Z' }),
+    ]
+
+    expect(getCurrentStreak(sets)).toEqual({ result: 'loss', length: 3 })
   })
 })

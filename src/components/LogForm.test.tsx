@@ -16,6 +16,7 @@ describe('LogForm', () => {
           tagLabel: 'Got grabbed',
         }}
         onSubmit={() => {}}
+        onOpenNotes={() => {}}
       />,
     )
 
@@ -32,6 +33,7 @@ describe('LogForm', () => {
           detail: 'Tag a loss to get a matchup-specific focus.',
         }}
         onSubmit={() => {}}
+        onOpenNotes={() => {}}
       />,
     )
 

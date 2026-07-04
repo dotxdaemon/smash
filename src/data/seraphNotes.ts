@@ -1,11 +1,20 @@
 // ABOUTME: Stores the Palutena quick-review notes supplied for the tracker.
-// ABOUTME: Keeps the source reference independent from the presentation layer.
+// ABOUTME: Tags each note with related loss reasons so focus surfaces can link drills.
+import type { LossTag } from '../types'
+
+export type SeraphNote = {
+  title: string
+  focus: string
+  points: ReadonlyArray<string>
+  relatedTags: ReadonlyArray<LossTag>
+}
+
 export const SERAPH_NOTES_SUBTITLE = 'Palutena matchup and gameplay adjustments'
 
 export const SERAPH_NOTES_SUMMARY =
   'Use this as a quick review sheet before sets: prioritize safer advantage pressure, cleaner ledge spacing, broader disadvantage mix-ups, and better resource awareness.'
 
-export const SERAPH_NOTES = [
+export const SERAPH_NOTES: ReadonlyArray<SeraphNote> = [
   {
     title: 'Up air advantage state',
     focus:
@@ -14,6 +23,7 @@ export const SERAPH_NOTES = [
       'This is especially useful when they like neutral air dodging into the platform, which is common.',
       'If the up air misses, you land sooner and have a much lower chance of being reversed out of advantage.',
     ],
+    relatedTags: [],
   },
   {
     title: 'Down tilt 2-frames by ledge',
@@ -23,6 +33,7 @@ export const SERAPH_NOTES = [
       "Space it so only the down tilt touches ledge. If spaced correctly, Mario's up B should not hit the down tilt.",
       'The goal is more consistent 2-frames with no trade on your attack.',
     ],
+    relatedTags: ['missed-kill'],
   },
   {
     title: 'Disadvantage panic options',
@@ -34,6 +45,7 @@ export const SERAPH_NOTES = [
       'Use teleport cancels off platforms as a disadvantage mix-up, which you did not do.',
       'Sometimes retreat to ledge, especially against characters that are not oppressive ledge trappers.',
     ],
+    relatedTags: ['panic-option', 'could-not-land'],
   },
   {
     title: 'Edgeguard vs. ledge trap decisions',
@@ -43,6 +55,7 @@ export const SERAPH_NOTES = [
       'Risky edgeguards are making you prone to reversals because you give up control.',
       'Time nairs better off stage, especially in the Mario matchup, to force a trade and get the semi-spike.',
     ],
+    relatedTags: ['missed-kill'],
   },
   {
     title: 'Pummel flowchart',
@@ -55,6 +68,7 @@ export const SERAPH_NOTES = [
       'Immediate back throw with no pummel is still a useful DI mix-up to kill as soon as possible.',
       'When the opponent has 0% chance of dying to any throw, take the free pummel damage.',
     ],
+    relatedTags: [],
   },
   {
     title: 'Forward air spacing',
@@ -66,6 +80,7 @@ export const SERAPH_NOTES = [
       'Retreating fast-fall fair can still lead to dash attack conversions.',
       'Poke shield with retreating fair, stay outside burst range, then punish antsy out-of-shield options with nair or bair.',
     ],
+    relatedTags: ['got-grabbed', 'shield-pressure'],
   },
   {
     title: 'Jump more in stressful air spots',
@@ -75,6 +90,7 @@ export const SERAPH_NOTES = [
       'Examples: after getting down thrown or down tilted at high percent, you got hit by something unnecessary because you did not recognize the jump option.',
       'Jumping away in weird, stressful scenarios can be better than always mashing a button or air dodge.',
     ],
+    relatedTags: ['panic-option', 'could-not-land'],
   },
   {
     title: 'Platform usage',
@@ -87,6 +103,7 @@ export const SERAPH_NOTES = [
       'Use short-hop up air on platforms much more for consistent platform tech chases.',
       'Scout for opponents who love jumping off platforms after shield pressure from nair or up air, then call out that jump with up air.',
     ],
+    relatedTags: ['could-not-land', 'panic-option'],
   },
   {
     title: 'Mario up smash shield punish',
@@ -97,6 +114,7 @@ export const SERAPH_NOTES = [
       'Do not go for it if the up smash is charged.',
       "Mario's up smash is not as safe on shield as it seems; it is -19 on block.",
     ],
+    relatedTags: ['shield-pressure'],
   },
   {
     title: 'Ledge option awareness',
@@ -107,5 +125,6 @@ export const SERAPH_NOTES = [
       'You can use that positioning to your advantage.',
       'You were getting killed by ledge often because you were not paying enough attention to this.',
     ],
+    relatedTags: ['edgeguarded'],
   },
-] as const
+]

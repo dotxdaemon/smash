@@ -1,5 +1,6 @@
-// ABOUTME: Builds training focus and matchup summaries from saved set records.
+// ABOUTME: Builds training focus, loss habits, and matchup summaries from saved sets.
 // ABOUTME: Keeps recommendation logic deterministic and independent from views.
+import { SERAPH_NOTES } from '../data/seraphNotes'
 import type { LossTag, SetEntry } from '../types'
 
 export const LOSS_TAGS: ReadonlyArray<{
@@ -41,11 +42,24 @@ export const LOSS_TAGS: ReadonlyArray<{
 
 const LOSS_TAG_BY_ID = new Map(LOSS_TAGS.map((tag) => [tag.id, tag]))
 
+export type DrillNote = {
+  title: string
+  focus: string
+}
+
 export type TrainingFocus = {
   title: 'Next set focus'
   detail: string
   opponent?: string
   tagLabel?: string
+  drills?: DrillNote[]
+}
+
+export type LossHabit = {
+  id: LossTag
+  label: string
+  total: number
+  recent: number
 }
 
 export type LossTagSummary = {
@@ -104,7 +118,43 @@ export function getNextSetFocus(
     detail: focusOpponent
       ? `Against ${focusOpponent}, ${tag.focus}`
       : tag.focus,
+    drills: getDrillsForTag(topTag.id).slice(0, 2),
   }
+}
+
+export function getDrillsForTag(tag: LossTag): DrillNote[] {
+  return SERAPH_NOTES.filter((note) => note.relatedTags.includes(tag)).map(
+    ({ title, focus }) => ({ title, focus }),
+  )
+}
+
+export function getLossHabits(sets: SetEntry[], recentCount = 10): LossHabit[] {
+  const ordered = sortSets(sets)
+  const recentIds = new Set(ordered.slice(0, recentCount).map((set) => set.id))
+  const counts = new Map<LossTag, { total: number; recent: number }>()
+
+  for (const set of ordered) {
+    if (set.result !== 'loss') continue
+    for (const tag of set.lossTags ?? []) {
+      const current = counts.get(tag) ?? { total: 0, recent: 0 }
+      current.total += 1
+      if (recentIds.has(set.id)) current.recent += 1
+      counts.set(tag, current)
+    }
+  }
+
+  return Array.from(counts.entries())
+    .map(([id, value]) => ({
+      id,
+      label: LOSS_TAG_BY_ID.get(id)?.label ?? id,
+      ...value,
+    }))
+    .sort(
+      (a, b) =>
+        b.total - a.total ||
+        b.recent - a.recent ||
+        a.label.localeCompare(b.label),
+    )
 }
 
 export function getMatchupSummary(

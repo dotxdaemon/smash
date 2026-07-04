@@ -1,14 +1,15 @@
-// ABOUTME: Shows the overall win/loss record, win rate, and recent-form pips.
+// ABOUTME: Shows the overall win/loss record, win rate, streak, and recent-form pips.
 // ABOUTME: Reads aggregated records and stays free of set-storage concerns.
 import { formatWinRate } from '../lib/format'
-import type { WinLossRecord } from '../lib/stats'
+import type { Streak, WinLossRecord } from '../lib/stats'
 
 type ScoreboardProps = {
   record: WinLossRecord
   form: Array<'win' | 'loss'>
+  streak: Streak | null
 }
 
-export function Scoreboard({ record, form }: ScoreboardProps) {
+export function Scoreboard({ record, form, streak }: ScoreboardProps) {
   const rate = formatWinRate(record.winRate)
   const formLabel = form
     .map((result) => (result === 'win' ? 'win' : 'loss'))
@@ -26,6 +27,20 @@ export function Scoreboard({ record, form }: ScoreboardProps) {
         <span className="score-value is-rate">{rate}</span>
         <span className="score-label">Win rate</span>
       </div>
+      {streak && streak.length >= 2 && (
+        <div className="score-figure">
+          <span
+            className={`score-value is-streak-${streak.result}`}
+            aria-label={`${streak.length} ${streak.result} streak`}
+          >
+            {streak.result === 'win' ? 'W' : 'L'}
+            {streak.length}
+          </span>
+          <span className="score-label" aria-hidden="true">
+            Streak
+          </span>
+        </div>
+      )}
       {form.length > 0 && (
         <div className="score-figure">
           <div

@@ -9,9 +9,10 @@ import type { LossTag } from '../types'
 type LogFormProps = {
   focus: TrainingFocus
   onSubmit: (input: SetEntryInput) => void
+  onOpenNotes: () => void
 }
 
-export function LogForm({ focus, onSubmit }: LogFormProps) {
+export function LogForm({ focus, onSubmit, onOpenNotes }: LogFormProps) {
   const [opponent, setOpponent] = useState('')
   const [result, setResult] = useState<'win' | 'loss'>('win')
   const [notes, setNotes] = useState('')
@@ -55,6 +56,22 @@ export function LogForm({ focus, onSubmit }: LogFormProps) {
           {focus.tagLabel && <span className="focus-tag">{focus.tagLabel}</span>}
         </div>
         <p className="focus-copy">{focus.detail}</p>
+        {focus.drills && focus.drills.length > 0 && (
+          <div className="focus-drills">
+            <span className="focus-drills-label">Drills</span>
+            {focus.drills.map((drill) => (
+              <button
+                key={drill.title}
+                type="button"
+                className="focus-drill"
+                onClick={onOpenNotes}
+                aria-label={`Open Seraph Notes: ${drill.title}`}
+              >
+                {drill.title} <span aria-hidden="true">→</span>
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       <div className="field-pair">
