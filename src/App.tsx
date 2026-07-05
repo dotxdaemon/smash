@@ -1,7 +1,6 @@
 // ABOUTME: Composes the set logging, history, and matchup tracker around saved sets.
 // ABOUTME: Owns view selection, matchup drill-in, undo, focus, and storage-error messaging.
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { NeonBackdrop } from './components/NeonBackdrop'
 import { Scoreboard } from './components/Scoreboard'
 import { NavTabs } from './components/NavTabs'
 import { LogForm } from './components/LogForm'
@@ -150,10 +149,9 @@ function App() {
 
   return (
     <>
-      <NeonBackdrop />
       <div
-        data-visual-system="night-console"
-        data-layout="compact-workspace"
+        data-visual-system="paper-scorebook"
+        data-layout="editorial-workspace"
         className="app-shell"
       >
         <div className="app-frame">
