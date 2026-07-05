@@ -150,39 +150,34 @@ function App() {
   return (
     <>
       <div
-        data-visual-system="paper-scorebook"
-        data-layout="editorial-workspace"
+        data-visual-system="notion-workspace"
+        data-layout="sidebar-editor"
         className="app-shell"
       >
         <div className="app-frame">
-          <header className="app-header">
-            <div className="brand">
-              <span className="brand-kicker">Palutena training log</span>
-              <h1 className="brand-title">Smash Tracker</h1>
-            </div>
-            <div className="header-aside">
-              <Scoreboard record={overallRecord} form={recentForm} streak={streak} />
-              {sets.length > 0 && (
-                <button
-                  type="button"
-                  className="export-action"
-                  onClick={exportSets}
-                  aria-label="Export all sets as a JSON backup"
-                >
-                  ↓ Export backup
-                </button>
-              )}
-            </div>
-          </header>
+          <aside className="app-sidebar" aria-label="Tracker navigation">
+            <header className="app-header">
+              <div className="brand">
+                <span className="brand-kicker">Palutena training log</span>
+                <h1 className="brand-title">Smash Tracker</h1>
+              </div>
+              <div className="header-aside">
+                <Scoreboard record={overallRecord} form={recentForm} streak={streak} />
+                {sets.length > 0 && (
+                  <button
+                    type="button"
+                    className="export-action"
+                    onClick={exportSets}
+                    aria-label="Export all sets as a JSON backup"
+                  >
+                    ↓ Export backup
+                  </button>
+                )}
+              </div>
+            </header>
 
-          <NavTabs tabs={TABS} active={view} label="Views" onChange={selectView} />
-
-          {storageError && (
-            <p className="storage-banner" role="alert">
-              Saving is unavailable — sets logged now won’t be kept after you close
-              the app.
-            </p>
-          )}
+            <NavTabs tabs={TABS} active={view} label="Views" onChange={selectView} />
+          </aside>
 
           <main
             ref={workspaceRef}
@@ -193,6 +188,13 @@ function App() {
             aria-labelledby={`tab-${view}`}
             tabIndex={-1}
           >
+            {storageError && (
+              <p className="storage-banner" role="alert">
+                Saving is unavailable — sets logged now won’t be kept after you close
+                the app.
+              </p>
+            )}
+
             {matchup ? (
               <MatchupPanel
                 matchup={matchup}
