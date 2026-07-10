@@ -13,7 +13,7 @@
   --color-line-strong: #3a434b;
   --color-text: #f2f3ef;
   --color-muted: #aeb5b9;
-  --color-faint: #747e84;
+  --color-faint: #808a90;
   --color-mint: #9df0be;
   --color-mint-ink: #0c2818;
   --color-mint-soft: #193326;
@@ -1068,12 +1068,13 @@ fieldset {
   }
 
   .score-figure {
-    display: flex;
+    display: grid;
     min-width: 0;
     min-height: 2.25rem;
-    align-items: baseline;
-    gap: 0.32rem;
-    padding: 0.45rem 0.55rem;
+    align-content: center;
+    justify-items: start;
+    gap: 0.12rem;
+    padding: 0.35rem 0.45rem;
   }
 
   .score-value {
@@ -1081,7 +1082,10 @@ fieldset {
   }
 
   .score-label {
-    display: none;
+    display: block;
+    font-size: 0.48rem;
+    line-height: 1;
+    white-space: nowrap;
   }
 
   .export-action {
