@@ -5,11 +5,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
 describe('App shell', () => {
-  it('renders the Notion workspace system without poster chrome', () => {
+  it('renders the match ledger system without document chrome', () => {
     const html = renderToStaticMarkup(<App />)
 
-    expect(html).toContain('data-visual-system="notion-workspace"')
-    expect(html).toContain('data-layout="sidebar-editor"')
+    expect(html).toContain('data-visual-system="match-ledger"')
+    expect(html).toContain('data-layout="rail-dock"')
+    expect(html).not.toContain('notion-workspace')
     expect(html).not.toContain('paper-scorebook')
     expect(html).not.toContain('neon-backdrop')
     expect(html).not.toContain('data-ink-stroke')

@@ -150,8 +150,8 @@ function App() {
   return (
     <>
       <div
-        data-visual-system="notion-workspace"
-        data-layout="sidebar-editor"
+        data-visual-system="match-ledger"
+        data-layout="rail-dock"
         className="app-shell"
       >
         <div className="app-frame">
