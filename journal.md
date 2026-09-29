@@ -309,3 +309,13 @@
 - Result: Desktop now reads as a purpose-built match ledger instead of a document editor, mobile exposes the whole opponent-result-notes-save path above the dock, all five views remain reachable, and the real save/undo flow restores the original record and local data.
 - Final audit: Brightened the faint-text token from a failing 4.26:1 contrast ratio to 5.01:1 and restored compact mobile score labels that the first stylesheet pass had hidden; the header still fits without overflow and Save retains clear space above the dock.
 - Verification: `npm test` (53 passed), `npm run lint`, `npm run typecheck`, `npm run build`, and `npm run build -- --base=/smash/` exited 0. Browser verification passed at 1280x720 and 390x844 with no horizontal overflow, 16px focused inputs at scale 1, no dock overlap in either Win or expanded Loss form, and no console warnings or errors; fresh desktop and mobile screenshots were captured.
+
+## 2026-09-29
+
+- Request: Fix the logo so it is an actual Palutena logo.
+- What I tried last: The 2026-06-25 pass shipped `public/favicon.svg` as a cyan bolt, which is not Palutena. The earlier Palutena vector icon (`c788251:public/icons/pwa-icon.svg`) was deleted with the PWA files in 6830f30.
+- Reference used: SSBU stock icon `PalutenaHeadSSBU.png` (64x64) from https://ssb.wiki.gallery/images/a/a9/PalutenaHeadSSBU.png, linked from https://www.ssbwiki.com/Palutena_(SSBU).
+- Attempt: Added a failing test in `src/favicon.test.ts` (aria-label plus the six stock-icon fill colors), confirmed it failed against the bolt, then replaced `public/favicon.svg` with the vector from `c788251` (aria-label changed to `Palutena stock icon`).
+- Error after I tried: None. The vector is a smoothed trace, not pixel-exact; the face is more pointed and the outline is a solid black halo compared with the reference's soft gray one.
+- Result: Favicon renders as the Palutena head; verified in Chromium at 16/32/64/256px against the reference. No manifest or service worker exists in the repo, so nothing else references an icon.
+- Verification: `npm test` (54 passed), `npm run lint`, `npm run typecheck`, `npm run build`, `npm run build -- --base=/smash/` all exited 0; built `index.html` links `/favicon.svg` and `/smash/favicon.svg` respectively.
