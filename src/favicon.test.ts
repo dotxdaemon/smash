@@ -39,10 +39,15 @@ describe('document favicon', () => {
         '#3ea600',
         '#3fc600',
         '#d5d000',
+        '#ccb40c',
         '#ffe8cc',
         '#ea00d1',
       ]),
     )
+  })
+
+  it('renders the icon with hard pixel edges', () => {
+    expect(faviconSvg).toContain('shape-rendering="crispEdges"')
   })
 
   it('declares an apple-touch-icon PNG that exists in public/', () => {
