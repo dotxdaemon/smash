@@ -325,3 +325,9 @@
 - Result: `public/apple-touch-icon.png` (512x512, opaque `#eef3ee` background, artwork inset 56px) and `public/favicon.svg` (20 KB, down from 91 KB) show the same smooth-edged Palutena head with the gem, horns, and circlet. Not yet verified on a real iPhone.
 - Constraint: Re-adding the home-screen app on iOS likely wipes its localStorage. Export the backup first; there is no import button.
 - Verification: `npm test` (55 passed), `npm run lint`, `npm run typecheck`, `npm run build`, `npm run build -- --base=/smash/` all exited 0; built HTML links `/apple-touch-icon.png` and `/smash/apple-touch-icon.png`.
+- Request: Sean said the icon "looks blurry and bad" after PR 4 merged.
+- What I tried last: PR 4 upscaled the 64px SSBU stock icon with Lanczos, quantized it to 7 colors, and traced it; edges wobbled and inner shapes were lumpy because the source is a resampled raster with about 1,200 colors.
+- Attempt: Added a failing test (`shape-rendering="crispEdges"` on the favicon), then rebuilt both icons as true pixel art: quantized at the source's own 64px resolution to an 8-color palette measured from the reference, turned the soft halo into a solid outline, removed isolated speckle pixels, and enlarged by a whole-number factor only (8x for the 512px PNG; one rect run per row for the SVG on a 62x62 grid).
+- Error after I tried: The first render left a few stray gold pixels on the face; a neighbor-majority despeckle pass removed them without touching the gem or the one-pixel circlet lines.
+- Result: Crisp hard edges at 512, 180, 60, 32 and 16px in Chromium, matching the reference's circlet, gem and hair layers. `favicon.svg` is 9 KB (was 20 KB); the PNG is 3.7 KB. Not yet checked on a real iPhone.
+- Verification: `npm test` (56 passed), `npm run lint`, `npm run typecheck`, `npm run build`, `npm run build -- --base=/smash/` all exited 0.
