@@ -331,3 +331,10 @@
 - Error after I tried: The first render left a few stray gold pixels on the face; a neighbor-majority despeckle pass removed them without touching the gem or the one-pixel circlet lines.
 - Result: Crisp hard edges at 512, 180, 60, 32 and 16px in Chromium, matching the reference's circlet, gem and hair layers. `favicon.svg` is 9 KB (was 20 KB); the PNG is 3.7 KB. Not yet checked on a real iPhone.
 - Verification: `npm test` (56 passed), `npm run lint`, `npm run typecheck`, `npm run build`, `npm run build -- --base=/smash/` all exited 0.
+- Request: Sean said the pixel-art icon (PR 5) was "blurry, pixellated, no continuity" and asked whether I had been listening.
+- What I tried last: PR 5 rebuilt the icon as literal 64px pixel art. `journal.md` had already logged that Sean rejected an "overly literal low-resolution sprite presentation", and the version before it was rejected as blurry, so this repeated a logged failure.
+- Reference: the SSBU stock icon exists only at 64x64 in the game data (Spriters Resource lists stock icons at 64x64), so no larger canonical version exists to use instead.
+- Attempt: Added a failing test (the SVG must use curved paths, not pixel-block rects or `crispEdges`), then rebuilt both icons by cleaning the 64px class grid (8-color palette merged to 7, specks removed), smoothing diagonals with three EPX passes and a light rounding pass, and vectorizing with potrace. Earlier tries that Gaussian-smoothed the whole image lost the horns and circlet, and a halo threshold that was too low made the outline too thick and the silhouette boxy.
+- Error after I tried: None functional. Known loss: the one-pixel goggle rings on the circlet no longer show, and the gem is a rounded teardrop.
+- Result: Smooth continuous vector edges with no pixel blocks and no blur; PNG is the same artwork at 512x512 with 24 px margins. Not verified on a real iPhone.
+- Verification: `npm test` (56 passed), `npm run lint`, `npm run typecheck`, `npm run build`, `npm run build -- --base=/smash/` all exited 0.
