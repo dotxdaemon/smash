@@ -33,7 +33,26 @@ describe('document favicon', () => {
       ),
     )
     expect(fills).toEqual(
-      new Set(['#0d0d0d', '#0d6f01', '#16a400', '#d6c700', '#da20b5', '#f6cf9f']),
+      new Set([
+        '#373635',
+        '#3d8900',
+        '#3ea600',
+        '#3fc600',
+        '#d5d000',
+        '#ffe8cc',
+        '#ea00d1',
+      ]),
     )
+  })
+
+  it('declares an apple-touch-icon PNG that exists in public/', () => {
+    const touchLink = indexHtml.match(
+      /<link[^>]*\brel=["']apple-touch-icon["'][^>]*>/i,
+    )?.[0]
+    expect(touchLink, 'index.html must declare an apple-touch-icon').toBeTruthy()
+
+    const href = touchLink?.match(/\bhref=["']([^"']+)["']/i)?.[1]
+    expect(href, 'the apple-touch-icon must have an href').toMatch(/\.png$/)
+    expect(publicAssetNames).toContain(href!.replace(/^\//, ''))
   })
 })
