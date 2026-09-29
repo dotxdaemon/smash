@@ -3,7 +3,7 @@
 import { canonicalizeOpponentName } from '../data/characters'
 import type { LossTag, SetEntry } from '../types'
 
-export const PLAYER_CHARACTER = 'Palutena'
+export const PLAYER_CHARACTER = 'Marth'
 
 export type SetEntryInput = {
   opponent: string

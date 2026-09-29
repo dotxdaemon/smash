@@ -1,5 +1,5 @@
 // ABOUTME: Verifies the Notion Smash notes render on their own app page.
-// ABOUTME: Keeps the people notes and fundamentals reminder separate from Seraph drills.
+// ABOUTME: Keeps the people notes and fundamentals reminder separate from the reference notes.
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { NotesView } from './NotesView'
@@ -22,6 +22,6 @@ describe('NotesView', () => {
     expect(html).toContain(
       'Play NEUTRAL, ADVANTAGE AND DISADVANTAGE deliberately. Don’t just rush in/mash buttons/hope to kill them. Have a plan for what the opponent is showing you. Gather data.',
     )
-    expect(html).not.toContain('Seraph Notes')
+    expect(html).not.toContain('id="reference-title"')
   })
 })

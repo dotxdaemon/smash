@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { SetList } from './SetList'
 import { formatWinRate } from '../lib/format'
+import { PLAYER_CHARACTER } from '../lib/sets'
 import type { MatchupSummary } from '../lib/training'
 
 type MatchupPanelProps = {
@@ -36,7 +37,7 @@ export function MatchupPanel({
 
       <header className="matchup-header">
         <div>
-          <h2 className="matchup-title">Palutena vs {matchup.opponent}</h2>
+          <h2 className="matchup-title">{PLAYER_CHARACTER} vs {matchup.opponent}</h2>
           <p className="matchup-record">
             {matchup.total} sets · {matchup.wins}W {matchup.losses}L · {rate}
           </p>
@@ -56,7 +57,7 @@ export function MatchupPanel({
                   type="button"
                   className="focus-drill"
                   onClick={onOpenNotes}
-                  aria-label={`Open Seraph Notes: ${drill.title}`}
+                  aria-label={`Open reference note: ${drill.title}`}
                 >
                   {drill.title} <span aria-hidden="true">→</span>
                 </button>

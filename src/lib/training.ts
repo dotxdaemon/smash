@@ -1,6 +1,6 @@
 // ABOUTME: Builds training focus, loss habits, and matchup summaries from saved sets.
 // ABOUTME: Keeps recommendation logic deterministic and independent from views.
-import { SERAPH_NOTES } from '../data/seraphNotes'
+import { REFERENCE_NOTES, type ReferenceNote } from '../data/referenceNotes'
 import type { LossTag, SetEntry } from '../types'
 
 export const LOSS_TAGS: ReadonlyArray<{
@@ -11,12 +11,12 @@ export const LOSS_TAGS: ReadonlyArray<{
   {
     id: 'got-grabbed',
     label: 'Got grabbed',
-    focus: 'keep Palutena outside grab range and punish the whiff.',
+    focus: 'stay outside grab range and punish the whiff.',
   },
   {
     id: 'could-not-land',
     label: 'Could not land',
-    focus: 'drift to ledge or teleport reset instead of forcing a landing button.',
+    focus: 'drift to ledge instead of forcing a landing button.',
   },
   {
     id: 'missed-kill',
@@ -31,7 +31,7 @@ export const LOSS_TAGS: ReadonlyArray<{
   {
     id: 'edgeguarded',
     label: 'Edgeguarded',
-    focus: 'delay teleport timing so the edgeguard has to commit first.',
+    focus: 'delay your recovery timing so the edgeguard has to commit first.',
   },
   {
     id: 'panic-option',
@@ -122,10 +122,13 @@ export function getNextSetFocus(
   }
 }
 
-export function getDrillsForTag(tag: LossTag): DrillNote[] {
-  return SERAPH_NOTES.filter((note) => note.relatedTags.includes(tag)).map(
-    ({ title, focus }) => ({ title, focus }),
-  )
+export function getDrillsForTag(
+  tag: LossTag,
+  notes: ReadonlyArray<ReferenceNote> = REFERENCE_NOTES,
+): DrillNote[] {
+  return notes
+    .filter((note) => note.relatedTags.includes(tag))
+    .map(({ title, focus }) => ({ title, focus }))
 }
 
 export function getLossHabits(sets: SetEntry[], recentCount = 10): LossHabit[] {

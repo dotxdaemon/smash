@@ -37,10 +37,11 @@ describe('App shell', () => {
     expect(html).not.toContain('戦')
   })
 
-  it('renders Palutena as the only player character on the log screen', () => {
+  it('renders Marth as the only player character on the log screen', () => {
     const html = renderToStaticMarkup(<App />)
 
-    expect(html).toContain('Palutena')
+    expect(html).toContain('Marth')
+    expect(html).not.toContain('Palutena')
     expect(html).not.toContain('placeholder="e.g. Wolf"')
   })
 
@@ -58,7 +59,7 @@ describe('App with saved sets', () => {
     vi.unstubAllGlobals()
   })
 
-  it('surfaces the streak and links the focus to Seraph Notes drills', () => {
+  it('surfaces the streak and the focus for the most common loss tag', () => {
     const stored = JSON.stringify([
       {
         id: 'seed-4',
@@ -95,7 +96,6 @@ describe('App with saved sets', () => {
     expect(html).toContain('W2')
     expect(html).toContain('Streak')
     expect(html).toContain('Against Fox, hold your position for one beat')
-    expect(html).toContain('Disadvantage panic options')
-    expect(html).toContain('Jump more in stressful air spots')
+    expect(html).not.toContain('focus-drills-label')
   })
 })

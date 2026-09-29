@@ -24,30 +24,33 @@ describe('document favicon', () => {
     ).toContain(fileName)
   })
 
-  it('draws the Palutena stock icon in the reference colors', () => {
-    expect(faviconSvg).toContain('aria-label="Palutena stock icon"')
+  it('draws the Falchion in the reference artwork colors', () => {
+    expect(faviconSvg).toContain('aria-label="Marth Falchion icon"')
 
-    const fills = new Set(
-      Array.from(faviconSvg.matchAll(/fill="(#[0-9a-f]{6})"/gi), (match) =>
+    const colors = new Set(
+      Array.from(faviconSvg.matchAll(/(?:fill|stroke)="(#[0-9a-f]{6})"/gi), (match) =>
         match[1].toLowerCase(),
       ),
     )
-    expect(fills).toEqual(
+    expect(colors).toEqual(
       new Set([
-        '#373635',
-        '#3d8900',
-        '#3ea600',
-        '#3fc600',
-        '#d5d000',
-        '#ccb40c',
-        '#ffe8cc',
-        '#ea00d1',
+        '#18245a',
+        '#d8c6a9',
+        '#a58e74',
+        '#b45825',
+        '#83431e',
+        '#411b08',
+        '#b37b51',
+        '#b12b31',
+        '#65a54d',
       ]),
     )
   })
 
-  it('renders the icon with hard pixel edges', () => {
-    expect(faviconSvg).toContain('shape-rendering="crispEdges"')
+  it('draws smooth curved shapes instead of pixel blocks', () => {
+    expect(faviconSvg).not.toContain('crispEdges')
+    expect(faviconSvg).toMatch(/ d="[^"]*C[-\d.]+ /)
+    expect(faviconSvg).not.toMatch(/h\d+v1h-\d+z/)
   })
 
   it('declares an apple-touch-icon PNG that exists in public/', () => {

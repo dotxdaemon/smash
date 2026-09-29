@@ -11,7 +11,7 @@ describe('LogForm', () => {
         focus={{
           title: 'Next set focus',
           detail:
-            'Against Fox, keep Palutena outside grab range and punish the whiff.',
+            'Against Fox, stay outside grab range and punish the whiff.',
           opponent: 'Fox',
           tagLabel: 'Got grabbed',
         }}
