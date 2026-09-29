@@ -2,6 +2,7 @@
 // ABOUTME: Guards against the bare /favicon.ico 404 and a missing browser-tab icon.
 import { describe, expect, it } from 'vitest'
 import indexHtml from '../index.html?raw'
+import faviconSvg from '../public/favicon.svg?raw'
 
 const publicAssets = import.meta.glob('../public/*', { eager: true })
 const publicAssetNames = Object.keys(publicAssets).map(
@@ -21,5 +22,18 @@ describe('document favicon', () => {
       publicAssetNames,
       `favicon asset ${href} must exist in public/`,
     ).toContain(fileName)
+  })
+
+  it('draws the Palutena stock icon in the reference colors', () => {
+    expect(faviconSvg).toContain('aria-label="Palutena stock icon"')
+
+    const fills = new Set(
+      Array.from(faviconSvg.matchAll(/fill="(#[0-9a-f]{6})"/gi), (match) =>
+        match[1].toLowerCase(),
+      ),
+    )
+    expect(fills).toEqual(
+      new Set(['#0d0d0d', '#0d6f01', '#16a400', '#d6c700', '#da20b5', '#f6cf9f']),
+    )
   })
 })
