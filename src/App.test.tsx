@@ -59,7 +59,7 @@ describe('App with saved sets', () => {
     vi.unstubAllGlobals()
   })
 
-  it('surfaces the streak and links the focus to Seraph Notes drills', () => {
+  it('surfaces the streak and the focus for the most common loss tag', () => {
     const stored = JSON.stringify([
       {
         id: 'seed-4',
@@ -96,7 +96,6 @@ describe('App with saved sets', () => {
     expect(html).toContain('W2')
     expect(html).toContain('Streak')
     expect(html).toContain('Against Fox, hold your position for one beat')
-    expect(html).toContain('Disadvantage panic options')
-    expect(html).toContain('Jump more in stressful air spots')
+    expect(html).not.toContain('focus-drills-label')
   })
 })

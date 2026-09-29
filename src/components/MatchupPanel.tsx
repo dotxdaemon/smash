@@ -57,7 +57,7 @@ export function MatchupPanel({
                   type="button"
                   className="focus-drill"
                   onClick={onOpenNotes}
-                  aria-label={`Open Seraph Notes: ${drill.title}`}
+                  aria-label={`Open reference note: ${drill.title}`}
                 >
                   {drill.title} <span aria-hidden="true">→</span>
                 </button>

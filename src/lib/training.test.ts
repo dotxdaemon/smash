@@ -1,7 +1,7 @@
 // ABOUTME: Verifies training summaries derived from logged Smash sets.
 // ABOUTME: Covers loss tags, next-set focus, and matchup-specific review data.
 import { describe, expect, it } from 'vitest'
-import type { SetEntry } from '../types'
+import type { LossTag, SetEntry } from '../types'
 import {
   LOSS_TAGS,
   getDrillsForTag,
@@ -53,18 +53,7 @@ describe('getNextSetFocus', () => {
       opponent: 'Fox',
       tagLabel: 'Panic option',
       detail: 'Against Fox, hold your position for one beat before choosing an escape.',
-      drills: [
-        {
-          title: 'Disadvantage panic options',
-          focus:
-            'You often neutral air dodge fast-fall to the ground after getting hit once in juggles or weird air spots.',
-        },
-        {
-          title: 'Jump more in stressful air spots',
-          focus:
-            'You often brute force your way to the ground when simply jumping away would solve the situation.',
-        },
-      ],
+      drills: [],
     })
   })
 
@@ -85,19 +74,47 @@ describe('LOSS_TAGS', () => {
 })
 
 describe('getDrillsForTag', () => {
-  it('maps a loss tag to its Seraph Notes drills in sheet order', () => {
-    expect(getDrillsForTag('missed-kill').map((drill) => drill.title)).toEqual([
-      'Down tilt 2-frames by ledge',
-      'Edgeguard vs. ledge trap decisions',
+  const notes = [
+    {
+      title: 'Ledge spacing',
+      focus: 'Stay out of range at the ledge.',
+      points: ['Hold neutral before stepping in.'],
+      relatedTags: ['missed-kill', 'edgeguarded'] as LossTag[],
+    },
+    {
+      title: 'Grab range',
+      focus: 'Stay outside grab range.',
+      points: ['Punish the whiff.'],
+      relatedTags: ['got-grabbed'] as LossTag[],
+    },
+    {
+      title: 'Ledge trap choices',
+      focus: 'Pick one safe option.',
+      points: ['Commit to one option.'],
+      relatedTags: ['missed-kill'] as LossTag[],
+    },
+  ]
+
+  it('maps a loss tag to its tagged notes in sheet order', () => {
+    expect(getDrillsForTag('missed-kill', notes).map((drill) => drill.title)).toEqual([
+      'Ledge spacing',
+      'Ledge trap choices',
     ])
-    expect(getDrillsForTag('got-grabbed').map((drill) => drill.title)).toEqual([
-      'Forward air spacing',
+    expect(getDrillsForTag('got-grabbed', notes).map((drill) => drill.title)).toEqual([
+      'Grab range',
+    ])
+    expect(getDrillsForTag('panic-option', notes)).toEqual([])
+  })
+
+  it('returns only the title and focus of each note', () => {
+    expect(getDrillsForTag('got-grabbed', notes)).toEqual([
+      { title: 'Grab range', focus: 'Stay outside grab range.' },
     ])
   })
 
-  it('gives every loss tag at least one drill to run', () => {
+  it('returns no drills while there are no reference notes', () => {
     for (const tag of LOSS_TAGS) {
-      expect(getDrillsForTag(tag.id).length).toBeGreaterThan(0)
+      expect(getDrillsForTag(tag.id)).toEqual([])
     }
   })
 })

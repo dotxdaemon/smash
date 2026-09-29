@@ -1,5 +1,5 @@
 // ABOUTME: Renders the Notion Smash notes as a dedicated quick-reference page.
-// ABOUTME: Presents people reminders and fundamentals apart from Seraph drills.
+// ABOUTME: Presents people reminders and fundamentals apart from the reference notes.
 import {
   SMASH_FUNDAMENTALS_REMINDER,
   SMASH_PEOPLE_NOTES,

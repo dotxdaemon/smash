@@ -1,5 +1,5 @@
 // ABOUTME: Stores the quick-reference notes from the Notion Smash page.
-// ABOUTME: Keeps opponent reminders and fundamentals separate from Seraph drills.
+// ABOUTME: Keeps opponent reminders and fundamentals separate from the reference notes.
 export const SMASH_PEOPLE_NOTES: ReadonlyArray<string> = [
   'Josh - Stay patient, look for options rather than commitments. Stay outside the triangle',
   'Kipum - Play at my own pace, don’t let his punish game scare me from playing the game. Play neutral more grounded, observe what he does out of shield (drift-back, aerial, grab, etc.)',

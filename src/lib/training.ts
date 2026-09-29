@@ -1,6 +1,6 @@
 // ABOUTME: Builds training focus, loss habits, and matchup summaries from saved sets.
 // ABOUTME: Keeps recommendation logic deterministic and independent from views.
-import { SERAPH_NOTES } from '../data/seraphNotes'
+import { REFERENCE_NOTES, type ReferenceNote } from '../data/referenceNotes'
 import type { LossTag, SetEntry } from '../types'
 
 export const LOSS_TAGS: ReadonlyArray<{
@@ -122,10 +122,13 @@ export function getNextSetFocus(
   }
 }
 
-export function getDrillsForTag(tag: LossTag): DrillNote[] {
-  return SERAPH_NOTES.filter((note) => note.relatedTags.includes(tag)).map(
-    ({ title, focus }) => ({ title, focus }),
-  )
+export function getDrillsForTag(
+  tag: LossTag,
+  notes: ReadonlyArray<ReferenceNote> = REFERENCE_NOTES,
+): DrillNote[] {
+  return notes
+    .filter((note) => note.relatedTags.includes(tag))
+    .map(({ title, focus }) => ({ title, focus }))
 }
 
 export function getLossHabits(sets: SetEntry[], recentCount = 10): LossHabit[] {
