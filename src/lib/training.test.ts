@@ -76,6 +76,14 @@ describe('getNextSetFocus', () => {
   })
 })
 
+describe('LOSS_TAGS', () => {
+  it('gives coaching focus that does not depend on one character', () => {
+    for (const tag of LOSS_TAGS) {
+      expect(tag.focus).not.toMatch(/palutena|teleport/i)
+    }
+  })
+})
+
 describe('getDrillsForTag', () => {
   it('maps a loss tag to its Seraph Notes drills in sheet order', () => {
     expect(getDrillsForTag('missed-kill').map((drill) => drill.title)).toEqual([

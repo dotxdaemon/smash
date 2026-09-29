@@ -37,10 +37,11 @@ describe('App shell', () => {
     expect(html).not.toContain('戦')
   })
 
-  it('renders Palutena as the only player character on the log screen', () => {
+  it('renders Marth as the only player character on the log screen', () => {
     const html = renderToStaticMarkup(<App />)
 
-    expect(html).toContain('Palutena')
+    expect(html).toContain('Marth')
+    expect(html).not.toContain('Palutena')
     expect(html).not.toContain('placeholder="e.g. Wolf"')
   })
 

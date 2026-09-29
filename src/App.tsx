@@ -158,7 +158,7 @@ function App() {
           <aside className="app-sidebar" aria-label="Tracker navigation">
             <header className="app-header">
               <div className="brand">
-                <span className="brand-kicker">Palutena training log</span>
+                <span className="brand-kicker">Marth Melee training log</span>
                 <h1 className="brand-title">Smash Tracker</h1>
               </div>
               <div className="header-aside">

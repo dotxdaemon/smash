@@ -11,12 +11,12 @@ export const LOSS_TAGS: ReadonlyArray<{
   {
     id: 'got-grabbed',
     label: 'Got grabbed',
-    focus: 'keep Palutena outside grab range and punish the whiff.',
+    focus: 'stay outside grab range and punish the whiff.',
   },
   {
     id: 'could-not-land',
     label: 'Could not land',
-    focus: 'drift to ledge or teleport reset instead of forcing a landing button.',
+    focus: 'drift to ledge instead of forcing a landing button.',
   },
   {
     id: 'missed-kill',
@@ -31,7 +31,7 @@ export const LOSS_TAGS: ReadonlyArray<{
   {
     id: 'edgeguarded',
     label: 'Edgeguarded',
-    focus: 'delay teleport timing so the edgeguard has to commit first.',
+    focus: 'delay your recovery timing so the edgeguard has to commit first.',
   },
   {
     id: 'panic-option',

@@ -5,7 +5,7 @@ import { buildSetsBackup, createSetEntry, filterSets } from './sets'
 import type { SetEntry } from '../types'
 
 describe('createSetEntry', () => {
-  it('canonicalizes the opponent and fixes the player to Palutena', () => {
+  it('canonicalizes the opponent and fixes the player to Marth', () => {
     const entry = createSetEntry({
       opponent: '  fox ',
       result: 'win',
@@ -14,7 +14,7 @@ describe('createSetEntry', () => {
     })
 
     expect(entry.opponent).toBe('Fox')
-    expect(entry.yourCharacter).toBe('Palutena')
+    expect(entry.yourCharacter).toBe('Marth')
     expect(entry.result).toBe('win')
     expect(entry.notes).toBeUndefined()
     expect(entry.lossTags).toBeUndefined()

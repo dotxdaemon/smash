@@ -47,7 +47,7 @@ describe('parseStoredSets', () => {
       {
         id: 'set-3',
         date: '2026-04-29T20:02:00.000Z',
-        opponent: 'r o b',
+        opponent: 'mr game and watch',
         result: 'loss',
       },
     ])
@@ -55,7 +55,7 @@ describe('parseStoredSets', () => {
     expect(parseStoredSets(stored).map((set) => set.opponent)).toEqual([
       'Fox',
       'Fox',
-      'R.O.B.',
+      'Mr. Game & Watch',
     ])
   })
 
